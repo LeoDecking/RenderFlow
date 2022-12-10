@@ -1,0 +1,3 @@
+/build*
+/model/*
+/lib/tensorflow.dll
