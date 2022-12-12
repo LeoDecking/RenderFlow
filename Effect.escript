@@ -4,7 +4,8 @@
 var Effect = new Type( Std.module('Effects/PPEffect') );
 
 static inDimensions = [324, 324];
-static outDimensions = [648, 648];
+// static outDimensions = [648, 648];
+static outDimensions = [64, 64];
 
 // Define Scripted State
 static SkipRendering = new Type(MinSG.ScriptedState);
@@ -53,7 +54,11 @@ Effect.begin @(override) ::= fn(){
 
 /*! ---|> PPEffect  */
 Effect.end @(override) ::=fn(){
-    Rendering.drawTextureToScreen(renderingContext, new Geometry.Rect(0, 0, outDimensions[0], outDimensions[1]), [this.colorTextureOut], [new Geometry.Rect(0, 0, 1, 1)]);
+    var vp = renderingContext.getViewport();
+
+    var r = [vp.getWidth() / outDimensions[0], vp.getHeight() / outDimensions[1]].min();
+
+    Rendering.drawTextureToScreen(renderingContext, new Geometry.Rect((vp.getWidth()-outDimensions[0]*r)/2, (vp.getHeight()-outDimensions[1]*r)/2, outDimensions[0]*r, outDimensions[1]*r), [this.colorTextureOut], [new Geometry.Rect(0, 0, 1, 1)]);
 };
 
 return new Effect;
