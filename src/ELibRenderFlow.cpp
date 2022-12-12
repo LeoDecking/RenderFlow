@@ -2,7 +2,9 @@
 
 #include <cppflow/cppflow.h>
 
+#include <E_Util/E_Utils.h>
 #include <EScript/Basics.h>
+#include <EScript/Objects/Collections/Array.h>
 #include <EScript/StdObjects.h>
 
 #include <Geometry/Angle.h>
@@ -89,34 +91,37 @@ namespace RenderFlow
         output = output * 255.0f;
         output = cppflow::cast(output, TF_FLOAT, TF_UINT8);
 
-        // std::cout << output << std::endl;
-        // for (int i = 0; i < 100; i++)
-        //     std::cout << output.get_data() << std::endl;
-
-        // std::vector<uint8_t> data;
-
         // TODO format
         std::vector<uint8_t> data;
-        for(uint8_t c : output.get_data<uint8_t>()) {
+        for (uint8_t c : output.get_data<uint8_t>())
+        {
             data.push_back(colormap[c][0]);
             data.push_back(colormap[c][1]);
             data.push_back(colormap[c][2]);
         }
         Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
 
-        // for (int i = 0; i < output_width * output_height * 3; i++)
-        // {
-        //     if (i % 3 == 0)
-        //         data.push_back(((int)(cam.getWorldPosition().getX() * 256 / 10)) % 256);
-        //     if (i % 3 == 1)
-        //         data.push_back(((int)(cam.getWorldPosition().getZ() * 256 / 10)) % 256);
-        //     if (i % 3 == 2)
-        //         data.push_back(((int)(angleH.deg() * 256 / 360)) % 256);
-        // }
-
         bitmap->setData(data);
 
         return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
+    }
+
+    EScript::Array *predict(EScript::Array *in)
+    {
+        std::vector<float> inVector;
+        for (int i = 0; i < in->size(); i++)
+        {
+            inVector.push_back(in->at(i).toFloat());
+        }
+
+        cppflow::tensor input = cppflow::tensor(inVector, {(int64_t)inVector.size()});
+        input = cppflow::expand_dims(input, 0);
+        // for (std::string s : model->get_operations())
+        //     std::cout << s << std::endl;
+        cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
+        output = cppflow::squeeze(output, {0});
+
+        return EScript::Array::create(output.get_data<float>());
     }
 
     // Output "Hello World!" to the console.
@@ -159,6 +164,11 @@ namespace RenderFlow
                 renderFromCamera(parameter[0].to<Rendering::RenderingContext &>(rt),
                                  *parameter[1].to<MinSG::CameraNode *>(rt))
                     .get());
+        });
+
+        ES_FUNCTION(lib, "predict", 1, 1, {
+            std::cout << "0" << std::endl;
+            return predict(parameter[0].to<EScript::Array *>(rt));
         });
     }
 
