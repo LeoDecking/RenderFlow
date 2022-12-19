@@ -14,16 +14,8 @@
  * The 'extern "C"' signalizes the compiler that it should tread this function as a plain C function
  * which can be easily found during dynamic linking (otherwise the compiler mangles the name).
  */
-extern "C" LIBRARY_API void initLibrary(EScript::Namespace* lib) {
+extern "C" LIBRARY_API void initLibrary(EScript::Namespace *lib)
+{
     std::cout << "Loading Library: " << LIBRARY_NAME << "..." << std::endl;
-    if(lib->getAttribute(LIBRARY_NAME).isNotNull()) {
-        std::cerr << LIBRARY_NAME << " Library already loaded!" << std::endl;
-    } else {
-        // create a new namespace under the GLOBALS namespace with the name of this library
-        auto * ns = new EScript::Namespace;
-        declareConstant(lib, LIBRARY_NAME, ns);
-        
-        // Initialize EScript functions for our project
-        RenderFlow::init(ns); // change this according to your project name
-    }
+    RenderFlow::init((EScript::Namespace *)(lib->getAttribute(LIBRARY_NAME).getValue()));
 }

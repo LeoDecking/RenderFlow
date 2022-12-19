@@ -41,6 +41,24 @@ namespace RenderFlow
 
     cppflow::model *model;
 
+    EScript::Array *predict(EScript::Array *in)
+    {
+        std::vector<float> inVector;
+        for (int i = 0; i < in->size(); i++)
+        {
+            inVector.push_back(in->at(i).toFloat());
+        }
+
+        cppflow::tensor input = cppflow::tensor(inVector, {(int64_t)inVector.size()});
+        input = cppflow::expand_dims(input, 0);
+        // for (std::string s : model->get_operations())
+        //     std::cout << s << std::endl;
+        cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
+        output = cppflow::squeeze(output, {0});
+
+        return EScript::Array::create(output.get_data<float>());
+    }
+
     Util::Reference<Rendering::Texture> renderFromTexture(Rendering::RenderingContext &rc,
                                                           Rendering::Texture &input_texture)
     {
@@ -89,7 +107,8 @@ namespace RenderFlow
         cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
         output = cppflow::squeeze(output, {0});
         output = output * 255.0f;
-        output = cppflow::cast(output, TF_FLOAT, TF_UINT8);
+        output = cppflow::clip_by_value(output, 0.0f, 255.0f);
+        output = cppflow::cast(output, TF_FLOAT, TF_UINT8, true);
 
         // TODO format
         std::vector<uint8_t> data;
@@ -99,29 +118,12 @@ namespace RenderFlow
             data.push_back(colormap[c][1]);
             data.push_back(colormap[c][2]);
         }
+
         Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
 
         bitmap->setData(data);
 
         return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
-    }
-
-    EScript::Array *predict(EScript::Array *in)
-    {
-        std::vector<float> inVector;
-        for (int i = 0; i < in->size(); i++)
-        {
-            inVector.push_back(in->at(i).toFloat());
-        }
-
-        cppflow::tensor input = cppflow::tensor(inVector, {(int64_t)inVector.size()});
-        input = cppflow::expand_dims(input, 0);
-        // for (std::string s : model->get_operations())
-        //     std::cout << s << std::endl;
-        cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
-        output = cppflow::squeeze(output, {0});
-
-        return EScript::Array::create(output.get_data<float>());
     }
 
     // Output "Hello World!" to the console.
@@ -148,7 +150,6 @@ namespace RenderFlow
         ES_FUNCTION(lib, "loadModel", 0, 0,
                     {
                         model = new cppflow::model(("../extPlugins/RenderFlow/model"));
-                        // model = m;
                         return thisEObj;
                     });
 
@@ -167,7 +168,6 @@ namespace RenderFlow
         });
 
         ES_FUNCTION(lib, "predict", 1, 1, {
-            std::cout << "0" << std::endl;
             return predict(parameter[0].to<EScript::Array *>(rt));
         });
     }
