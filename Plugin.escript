@@ -9,8 +9,8 @@ static plugin = new Plugin({
 		Plugin.EXTENSION_POINTS : [ ] // will be explained later
 });
 
-static srLoaded = false;
-static modelLoaded = false;
+static loadedFlow = void;
+static loadedModel = void;
 
 // This function will be called only if this plugin is marked as active
 plugin.init @(override) := fn() {
@@ -19,8 +19,10 @@ plugin.init @(override) := fn() {
 	RenderFlow.deactivate := deactivate;
 	RenderFlow.getCameraAngles := getCameraAngles;
 	RenderFlow.colormap := colormap;
+	RenderFlow.getFlow := fn() { return loadedFlow; };
 
-	// load(__DIR__ + "/someOtherFile.escript"); // You can also execute other escript files from here
+	load(__DIR__ + "/Flow.escript");
+	load(__DIR__ + "/MyFlow.escript"); // TODO remove
 
 	 // Create an instance of the LibraryLoader.
     var loader = new (Std.module("LibUtilExt/LibraryLoader"));
@@ -39,18 +41,21 @@ plugin.init @(override) := fn() {
 	return true; // true means that we have initialized it without any errors
 };
 
-static activate = fn() {
-	if(!srLoaded) {
-		if(!modelLoaded) RenderFlow.loadModel();
+static activate = fn(flow) {
+	if(loadedFlow && loadedFlow != flow) {
+		deactivate();
+	}
+	if(!loadedFlow) {
+		if(!loadedModel != flow.getModel()) RenderFlow.loadModel(flow.getModel());
+		loadedFlow = flow;
+		loadedModel = flow.getModel();
 		PADrend.executeCommand(fn(){PPEffectPlugin.loadAndSetEffect("../extPlugins/RenderFlow/Effect.escript");});
-		srLoaded = true;
-		modelLoaded = true;
 	}
 };
 static deactivate = fn() {
-	if(srLoaded) {
+	if(loadedFlow) {
 		PADrend.executeCommand(fn(){PPEffectPlugin.setEffect(false);});
-		srLoaded = false;
+		loadedFlow = void;
 	}
 };
 

@@ -3,8 +3,6 @@
 */
 var Effect = new Type( Std.module('Effects/PPEffect') );
 
-static inDimensions = [324, 324];
-static outDimensions = [64, 64];
 
 // Define Scripted State
 static SkipRendering = new Type(MinSG.ScriptedState);
@@ -13,57 +11,53 @@ SkipRendering.doEnableState @(override) ::= fn(node, rp) {
 };
 
 Effect._constructor ::= fn() {
-    // this.fbo := new Rendering.FBO;
-    // renderingContext.pushAndSetFBO(fbo);
+    var flow = RenderFlow.getFlow();
+    this.colorTextureOut := Rendering.createHDRTexture(flow.getDimX(), flow.getDimY(), false);
 
-    // this.colorTextureIn := Rendering.createHDRTexture(inDimensions[0], inDimensions[1], false);
-    // this.depthTexture := Rendering.createDepthTexture(inDimensions[0], inDimensions[1]);
+    if(flow.getPrerender()) {
+        this.fbo := new Rendering.FBO;
+        renderingContext.pushAndSetFBO(fbo);
 
-    this.colorTextureOut := Rendering.createHDRTexture(outDimensions[0], outDimensions[1], false);
+        this.colorTextureIn := Rendering.createHDRTexture(inDimensions[0], inDimensions[1], false);
+        this.depthTexture := Rendering.createDepthTexture(inDimensions[0], inDimensions[1]);
 
-    // this.fbo.attachColorTexture(renderingContext, colorTextureIn);
-    // this.fbo.attachDepthTexture(renderingContext, depthTexture);
+        this.fbo.attachColorTexture(renderingContext, colorTextureIn);
+        this.fbo.attachDepthTexture(renderingContext, depthTexture);
 
-    // out("status: ", this.fbo.getStatusMessage(renderingContext), "\n"); // TODO remove?
+        // out("status: ", this.fbo.getStatusMessage(renderingContext), "\n"); // TODO remove?
+        renderingContext.popFBO();
+    }
 
-    this.skip := new SkipRendering();
-
-    // renderingContext.popFBO();
+    this.skip := new SkipRendering(); // TODO remove?
 };
 
 /*! ---|> PPEffect  */
 Effect.begin @(override) ::= fn(){
-    // renderingContext.pushAndSetFBO(fbo);
+    var flow = RenderFlow.getFlow();
 
-    // renderingContext.pushViewport();
-    // renderingContext.setViewport(0, 0, inDimensions[0], inDimensions[1]);
+    var prerender = void;
+    if(flow.getPrerender()){        
+        renderingContext.pushAndSetFBO(fbo);
 
-    // PADrend.getRootNode().removeState(skip);
-    // PADrend.renderScene(PADrend.getRootNode(), void, PADrend.getRenderingFlags(), PADrend.getBGColor(), PADrend.getRenderingLayers());
-    // renderingContext.finish();
+        renderingContext.pushViewport();
+        renderingContext.setViewport(0, 0, flow.getPrerenderDimX(), flow.getPrerenderDimY());
 
-    // renderingContext.popViewport();
-	// renderingContext.popFBO();
+        PADrend.getRootNode().removeState(skip);
+        PADrend.renderScene(PADrend.getRootNode(), void, PADrend.getRenderingFlags(), PADrend.getBGColor(), PADrend.getRenderingLayers());
+        renderingContext.finish();
 
+        renderingContext.popViewport();
+        renderingContext.popFBO();
+        // TODO colorTextureIn from Texture to Array
+    }
 
-
-    // colorTextureOut = RenderFlow.renderFromTexture(renderingContext, colorTextureIn);
-    // colorTextureOut = RenderFlow.renderFromCamera(renderingContext, PADrend.getActiveCamera());
-
-    var cam = PADrend.getActiveCamera();
-    // // var angles = RenderFlow.getCameraAngles(cam);
-
-    // // std::cout << x.getX() << " " << x.getY() << " " << x.getZ() << std::endl;
-    // // std::cout << y.getX() << " " << y.getY() << " " << y.getZ() << std::endl;
-    // // out(cam.getWorldPosition().getX() + ", " + cam.getWorldPosition().getY() + ", " + cam.getWorldPosition().getZ() + "; " + angleH + "°, " + angleV + "°");
-
-    var input = [cam.getWorldPosition().getX() / 10, cam.getWorldPosition().getZ() / 10];
-    // out(input[0], ", ", input[1],"\n");
-    var output = RenderFlow.predict(input);
     
-    // // TODO, I have added .setData to E_Bitmap.cpp
-    var bitmap = new Util.Bitmap(outDimensions[0], outDimensions[1], Util.Bitmap.RGB);
-    bitmap.setData(RenderFlow.colormap(output));
+    var data = flow.render(prerender);
+    
+    // TODO, I have added .setData to E_Bitmap.cpp
+    // TODO _FLOAT?
+    var bitmap = new Util.Bitmap(flow.getDimX(), flow.getDimY(), flow.getFormat() == 'MONO' ? Util.Bitmap.MONO : Util.Bitmap.RGB);
+    bitmap.setData(flow.getFormat() == 'MONO_COLORMAP' ? RenderFlow.colormap(output) : output);
 
     colorTextureOut = Rendering.createTextureFromBitmap(bitmap);
 

@@ -59,72 +59,72 @@ namespace RenderFlow
         return EScript::Array::create(output.get_data<float>());
     }
 
-    Util::Reference<Rendering::Texture> renderFromTexture(Rendering::RenderingContext &rc,
-                                                          Rendering::Texture &input_texture)
-    {
+    // Util::Reference<Rendering::Texture> renderFromTexture(Rendering::RenderingContext &rc,
+    //                                                       Rendering::Texture &input_texture)
+    // {
 
-        // auto input = input_texture.getTexImage(rc, input_width, input_height, 3);
+    //     // auto input = input_texture.getTexImage(rc, input_width, input_height, 3);
 
-        Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
+    //     Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
 
-        std::vector<uint8_t> data;
-        for (int i = 0; i < output_width * output_height * 3; i++)
-        {
-            data.push_back(i % 256);
-        }
+    //     std::vector<uint8_t> data;
+    //     for (int i = 0; i < output_width * output_height * 3; i++)
+    //     {
+    //         data.push_back(i % 256);
+    //     }
 
-        bitmap->setData(data);
+    //     bitmap->setData(data);
 
-        return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
-    }
+    //     return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
+    // }
 
-    // todo movement radius
-    Util::Reference<Rendering::Texture> renderFromCamera(Rendering::RenderingContext &rc, MinSG::CameraNode &cam)
-    {
-        Geometry::Vec3 x = cam.getWorldMatrix().transformDirection(Geometry::Vec3(1, 0, 0));
-        Geometry::Angle angleH = Geometry::Angle::rad((float)acos(x.getX()));
-        if (x.getX() == 1)
-            angleH = Geometry::Angle::deg(0);
-        if (x.getZ() < 0)
-            angleH = Geometry::Angle::deg(360) - angleH;
+    // // todo movement radius
+    // Util::Reference<Rendering::Texture> renderFromCamera(Rendering::RenderingContext &rc, MinSG::CameraNode &cam)
+    // {
+    //     Geometry::Vec3 x = cam.getWorldMatrix().transformDirection(Geometry::Vec3(1, 0, 0));
+    //     Geometry::Angle angleH = Geometry::Angle::rad((float)acos(x.getX()));
+    //     if (x.getX() == 1)
+    //         angleH = Geometry::Angle::deg(0);
+    //     if (x.getZ() < 0)
+    //         angleH = Geometry::Angle::deg(360) - angleH;
 
-        Geometry::Vec3 y = cam.getWorldMatrix().transformDirection(Geometry::Vec3(0, 1, 0));
-        Geometry::Angle angleV = Geometry::Angle::rad((float)acos(y.getY()));
-        if (y.getY() == 1)
-            angleV = Geometry::Angle::deg(0);
-        if (y.getX() < 0)
-            angleV = Geometry::Angle::deg(360) - angleV;
+    //     Geometry::Vec3 y = cam.getWorldMatrix().transformDirection(Geometry::Vec3(0, 1, 0));
+    //     Geometry::Angle angleV = Geometry::Angle::rad((float)acos(y.getY()));
+    //     if (y.getY() == 1)
+    //         angleV = Geometry::Angle::deg(0);
+    //     if (y.getX() < 0)
+    //         angleV = Geometry::Angle::deg(360) - angleV;
 
-        // std::cout << x.getX() << " " << x.getY() << " " << x.getZ() << std::endl;
-        // std::cout << y.getX() << " " << y.getY() << " " << y.getZ() << std::endl;
-        std::cout << cam.getWorldPosition().getX() << ", " << cam.getWorldPosition().getY() << ", " << cam.getWorldPosition().getZ() << "; " << angleH.deg() << "°, " << angleV.deg() << "°" << std::endl;
+    //     // std::cout << x.getX() << " " << x.getY() << " " << x.getZ() << std::endl;
+    //     // std::cout << y.getX() << " " << y.getY() << " " << y.getZ() << std::endl;
+    //     std::cout << cam.getWorldPosition().getX() << ", " << cam.getWorldPosition().getY() << ", " << cam.getWorldPosition().getZ() << "; " << angleH.deg() << "°, " << angleV.deg() << "°" << std::endl;
 
-        cppflow::tensor input = {cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()};
-        input = input / 10.0f;
-        input = cppflow::expand_dims(input, 0);
-        // for (std::string s : model->get_operations())
-        //     std::cout << s << std::endl;
-        cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
-        output = cppflow::squeeze(output, {0});
-        output = output * 255.0f;
-        output = cppflow::clip_by_value(output, 0.0f, 255.0f);
-        output = cppflow::cast(output, TF_FLOAT, TF_UINT8, true);
+    //     cppflow::tensor input = {cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()};
+    //     input = input / 10.0f;
+    //     input = cppflow::expand_dims(input, 0);
+    //     // for (std::string s : model->get_operations())
+    //     //     std::cout << s << std::endl;
+    //     cppflow::tensor output = (*model)({{"serving_default_dense_input:0", input}}, {{"StatefulPartitionedCall:0"}})[0];
+    //     output = cppflow::squeeze(output, {0});
+    //     output = output * 255.0f;
+    //     output = cppflow::clip_by_value(output, 0.0f, 255.0f);
+    //     output = cppflow::cast(output, TF_FLOAT, TF_UINT8, true);
 
-        // TODO format
-        std::vector<uint8_t> data;
-        for (uint8_t c : output.get_data<uint8_t>())
-        {
-            data.push_back(colormap[c][0]);
-            data.push_back(colormap[c][1]);
-            data.push_back(colormap[c][2]);
-        }
+    //     // TODO format
+    //     std::vector<uint8_t> data;
+    //     for (uint8_t c : output.get_data<uint8_t>())
+    //     {
+    //         data.push_back(colormap[c][0]);
+    //         data.push_back(colormap[c][1]);
+    //         data.push_back(colormap[c][2]);
+    //     }
 
-        Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
+    //     Util::Bitmap *bitmap = new Util::Bitmap(output_width, output_height, Util::PixelFormat::RGB);
 
-        bitmap->setData(data);
+    //     bitmap->setData(data);
 
-        return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
-    }
+    //     return Rendering::TextureUtils::createTextureFromBitmap(*bitmap);
+    // }
 
     // Output "Hello World!" to the console.
     void helloWorld()
@@ -147,25 +147,25 @@ namespace RenderFlow
                         return thisEObj;
                     });
 
-        ES_FUNCTION(lib, "loadModel", 0, 0,
+        ES_FUNCTION(lib, "loadModel", 1, 1,
                     {
-                        model = new cppflow::model(("../extPlugins/RenderFlow/model"));
+                        model = new cppflow::model(parameter[0].toString());
                         return thisEObj;
                     });
 
-        ES_FUNCTION(lib, "renderFromTexture", 2, 2, {
-            return EScript::create(
-                renderFromTexture(parameter[0].to<Rendering::RenderingContext &>(rt),
-                                  *parameter[1].to<Rendering::Texture *>(rt))
-                    .get());
-        });
+        // ES_FUNCTION(lib, "renderFromTexture", 2, 2, {
+        //     return EScript::create(
+        //         renderFromTexture(parameter[0].to<Rendering::RenderingContext &>(rt),
+        //                           *parameter[1].to<Rendering::Texture *>(rt))
+        //             .get());
+        // });
 
-        ES_FUNCTION(lib, "renderFromCamera", 2, 2, {
-            return EScript::create(
-                renderFromCamera(parameter[0].to<Rendering::RenderingContext &>(rt),
-                                 *parameter[1].to<MinSG::CameraNode *>(rt))
-                    .get());
-        });
+        // ES_FUNCTION(lib, "renderFromCamera", 2, 2, {
+        //     return EScript::create(
+        //         renderFromCamera(parameter[0].to<Rendering::RenderingContext &>(rt),
+        //                          *parameter[1].to<MinSG::CameraNode *>(rt))
+        //             .get());
+        // });
 
         ES_FUNCTION(lib, "predict", 1, 1, {
             return predict(parameter[0].to<EScript::Array *>(rt));
