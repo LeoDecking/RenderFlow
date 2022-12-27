@@ -2,3 +2,4 @@
 /model/*
 /lib/tensorflow.dll
 # https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-windows-x86_64-2.10.0.zip?utm_source=www.tensorflow.org&utm_medium=referral
+.vscode/settings.json

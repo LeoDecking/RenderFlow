@@ -1,10 +1,13 @@
 var myFlow = new RenderFlow.Flow({
-    NAME: 'paderbornMap'
-    MODEL: '../extPlugins/RenderFlow/model'
-    PRERENDER: false
-    // PRERENDER_DIM
-    DIM: [64, 64]
-    FORMAT: 'MONO_COLORMAP'
+    RenderFlow.Flow.NAME: 'paderbornMap',
+    RenderFlow.Flow.MODEL: '../extPlugins/RenderFlow/model',
+    RenderFlow.Flow.MODEL_FROZEN_GRAPH: false,
+    RenderFlow.Flow.MODEL_SHAPE: [2],
+    RenderFlow.Flow.MODEL_INPUT: 'serving_default_dense_6_input:0',
+    RenderFlow.Flow.MODEL_OUTPUT: 'StatefulPartitionedCall:0',
+    RenderFlow.Flow.PRERENDER: false,
+    RenderFlow.Flow.DIM: [64, 64],
+    RenderFlow.Flow.FORMAT: 'MONO_COLORMAP'
 });
 
 myFlow.render @(override) := fn(prerender) {
@@ -18,7 +21,6 @@ myFlow.render @(override) := fn(prerender) {
     var input = [cam.getWorldPosition().getX() / 10, cam.getWorldPosition().getZ() / 10];
     // out(input[0], ", ", input[1],"\n");
     var output = RenderFlow.predict(input);
-    
     return output;
 };
 
