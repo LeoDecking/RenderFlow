@@ -12,7 +12,12 @@ var upscaleFlow = new RenderFlow.Flow({
 });
 
 upscaleFlow.render @(override) := fn(prerender) {
-    var output = RenderFlow.predict(prerender);
+    var in = new Array();
+    for(var i = 0; i < prerender.size(); i++) {
+        in.append([prerender[i]/255]);
+    }
+
+    var output = RenderFlow.predict(in);
     
     var r = new Array();
     for(var i = 0; i < output.size(); i++) {
