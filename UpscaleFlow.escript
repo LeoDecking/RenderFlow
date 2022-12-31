@@ -7,28 +7,80 @@ var upscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.MODEL_OUTPUT: 'Identity:0',
     RenderFlow.Flow.PRERENDER: true,
     RenderFlow.Flow.PRERENDER_DIM: [324, 324],
-    RenderFlow.Flow.DIM: [648, 648],
+    RenderFlow.Flow.DIM: [2 * 648 + 4, 648],
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-upscaleFlow.render @(override) := fn(prerender) {
-    var in = new Array();
-    for(var i = 0; i < prerender.size(); i++) {
-        in.append([prerender[i]/255]);
-    }
+static lastPrerender = void;
+static lastRender = void;
 
-    var output = RenderFlow.predict(in);
-    
+static splitscreen = fn(prerender, render) {
     var r = new Array();
-    for(var i = 0; i < output.size(); i++) {
-        var o = output[i];
-        if(o < 0) o = 0;
-        else if (o > 1) o = 255;
-        else o = (o * 255).floor();
-        r.append([o]);
+
+    for(var y = 0; y < 324; y++) {
+        for(var x = 0; x < 324; x++) {
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+        }
+        for(var x = 0; x < 3 * 4; x++)
+            r.append([0]);
+        
+        for(var x = 0; x < 648 * 3; x++)
+            r.append([render[(2 * y) * 648 * 3 + x]]);
+
+
+        for(var x = 0; x < 324; x++) {
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+        }
+
+        for(var x = 0; x < 3 * 4; x++)
+            r.append([0]);
+
+        for(var x = 0; x < 648 * 3; x++)
+            r.append([render[(2 * y + 1) * 648 * 3 + x]]);
     }
 
     return r;
 };
+
+static upscale = fn(prerender) {
+    var r = new Array();
+
+    for(var y = 0; y < 324; y++) {
+        for(var x = 0; x < 324; x++) {
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+        }
+         for(var x = 0; x < 324; x++) {
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+            r.append([prerender[y * 324 * 3 + (3 * x)], prerender[y * 324 * 3 + (3 * x + 1)], prerender[y * 324 * 3 + (3 * x + 2)]]);
+        }
+    }
+
+    return r;
+};
+
+// TODO slow
+
+upscaleFlow.render @(override) := fn(prerender) {
+
+    if(lastPrerender == prerender) return lastRender;
+
+    var in = RenderFlow.uint8ToFloat(prerender);
+    var output = RenderFlow.predict(in);
+    var result = RenderFlow.floatToUint8(output);
+
+    result = splitscreen(prerender, result);
+
+    lastPrerender = prerender;
+    lastRender = result;
+
+    out(result);
+
+    return result;
+};
+
+
 
 RenderFlow.upscaleFlow := upscaleFlow;
