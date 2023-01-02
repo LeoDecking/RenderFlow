@@ -18,8 +18,8 @@ plugin.init @(override) := fn() {
 	RenderFlow.activate := activate;
 	RenderFlow.deactivate := deactivate;
 	RenderFlow.getCameraAngles := getCameraAngles;
-	RenderFlow.uint8ToFloat := uint8ToFloat;
-	RenderFlow.floatToUint8 := floatToUint8;
+	// RenderFlow.uint8ToFloat := uint8ToFloat;
+	// RenderFlow.floatToUint8 := floatToUint8;
 	RenderFlow.colormap := colormap;
 	RenderFlow.getFlow := fn() { return loadedFlow; };
 
@@ -82,26 +82,26 @@ static getCameraAngles = fn(cam) {
 	return [angleH, angleV];
 };
 
-static uint8ToFloat = fn(array) {
-	var r = new Array();
-    for(var i = 0; i < array.size(); i++) {
-        r.append([array[i]/255]);
-    }
+// static uint8ToFloat = fn(array) {
+// 	var r = new Array();
+//     for(var i = 0; i < array.size(); i++) {
+//         r.append([array[i]/255]);
+//     }
 
-    return r;
-};
-static floatToUint8 = fn(array) {
-	var r = new Array();
-    for(var i = 0; i < array.size(); i++) {
-        var o = array[i];
-        if(o < 0) o = 0;
-        else if (o > 1) o = 255;
-        else o = (o * 255).floor();
-        r.append([o]);
-    }
+//     return r;
+// };
+// static floatToUint8 = fn(array) {
+// 	var r = new Array();
+//     for(var i = 0; i < array.size(); i++) {
+//         var o = array[i];
+//         if(o < 0) o = 0;
+//         else if (o > 1) o = 255;
+//         else o = (o * 255).floor();
+//         r.append([o]);
+//     }
 
-    return r;
-};
+//     return r;
+// };
 
 // https://www.kennethmoreland.com/color-advice/
 // viridis
@@ -110,12 +110,16 @@ static cmap = [[68, 1, 84], [68, 2, 86], [69, 4, 87], [69, 5, 89], [70, 7, 90], 
 // data: [0,1)^*
 static colormap = fn(data) {
 	var r = new Array();
+    r.resize(3 * data.size());
     for(var i = 0; i < data.size(); i++) {
         var o = data[i];
         if(o < 0) o = 0;
         else if (o > 1) o = 255;
         else o = (o * 255).floor();
-        r.append([cmap[o][0], cmap[o][1], cmap[o][2]]);
+
+        r[i*3] = cmap[o][0];
+        r[i*3 + 1] = cmap[o][1];
+        r[i*3 + 2] = cmap[o][2];
     }
 	return r;
 };
