@@ -50,11 +50,17 @@ Effect.begin @(override) ::= fn(){
     }
     
     var data = flow.render(prerender);
+    if(flow.getFormat() == 'MONO_COLORMAP')
+        data = RenderFlow.colormap(data);
 
     // TODO, I have added .setData to E_Bitmap.cpp
     // TODO _FLOAT?
-    var bitmap = new Util.Bitmap(flow.getDimX(), flow.getDimY(), flow.getFormat() == 'MONO' ? Util.Bitmap.MONO : Util.Bitmap.RGB);
-    bitmap.setData(flow.getFormat() == 'MONO_COLORMAP' ? RenderFlow.colormap(data) : data);
+    var dim = flow.getDim();
+    if(flow.getPrerender() && flow.getPrerenderSplitscreen())
+        [data, dim] = RenderFlow.splitscreen(prerender, flow.getPrerenderDim(), data, flow.getDim());
+
+    var bitmap = new Util.Bitmap(dim[0], dim[1], flow.getFormat() == 'MONO' ? Util.Bitmap.MONO : Util.Bitmap.RGB);
+    bitmap.setData(data);
 
     colorTexture = Rendering.createTextureFromBitmap(bitmap);
     PADrend.getRootNode().addState(skip);
@@ -66,9 +72,10 @@ Effect.end @(override) ::=fn(){
 
     var flow = RenderFlow.getFlow();
     var vp = renderingContext.getViewport();
+    var dim = (flow.getPrerender() && flow.getPrerenderSplitscreen()) ? RenderFlow.splitscreenDim(flow.getPrerenderDim(), flow.getDim()) : flow.getDim();
 
-    var r = [vp.getWidth() / flow.getDimX(), vp.getHeight() / flow.getDimY()].min();
-    var screenRect = new Geometry.Rect((vp.getWidth() - flow.getDimX() * r) / 2, (vp.getHeight() - flow.getDimY() * r) / 2, flow.getDimX() * r, flow.getDimY() * r);
+    var r = [vp.getWidth() / dim[0], vp.getHeight() / dim[1]].min();
+    var screenRect = new Geometry.Rect((vp.getWidth() - dim[0] * r) / 2, (vp.getHeight() - dim[1] * r) / 2, dim[0] * r, dim[1] * r);
 
     Rendering.drawTextureToScreen(renderingContext, screenRect, [this.colorTexture], [new Geometry.Rect(0, 0, 1, 1)]);
 };

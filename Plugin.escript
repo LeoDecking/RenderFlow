@@ -82,27 +82,6 @@ static getCameraAngles = fn(cam) {
 	return [angleH, angleV];
 };
 
-// static uint8ToFloat = fn(array) {
-// 	var r = new Array();
-//     for(var i = 0; i < array.size(); i++) {
-//         r.append([array[i]/255]);
-//     }
-
-//     return r;
-// };
-// static floatToUint8 = fn(array) {
-// 	var r = new Array();
-//     for(var i = 0; i < array.size(); i++) {
-//         var o = array[i];
-//         if(o < 0) o = 0;
-//         else if (o > 1) o = 255;
-//         else o = (o * 255).floor();
-//         r.append([o]);
-//     }
-
-//     return r;
-// };
-
 // https://www.kennethmoreland.com/color-advice/
 // viridis
 // TODO license

@@ -25,6 +25,7 @@
 #include <Util/Graphics/PixelFormat.h>
 
 #include <iostream> // TODO remove
+#include <time.h>
 #include <algorithm>
 
 namespace RenderFlow
@@ -35,28 +36,19 @@ namespace RenderFlow
     std::string outputOperation;
     std::vector<int64_t> shape;
 
-    EScript::Array *uint8ToFloat(EScript::Array *in) {
-        std::vector<float> out;
-        for (int i = 0; i < in->size(); i++)
-            out.push_back(in->at(i).toFloat() / 255);
-
-        return EScript::Array::create(out);
-    }
-    EScript::Array *floatToUint8(EScript::Array *in) {
-        std::vector<int> out;
-        for (int i = 0; i < in->size(); i++)
-            out.push_back(std::clamp(in->at(i).toFloat(), 0.0f, 1.0f) * 255);
-
-        return EScript::Array::create(out);
-    }
-
     EScript::Array *predict(EScript::Array *in)
     {
+        clock_t start, end;
+        start = clock();
+
         std::vector<float> inVector;
         for (int i = 0; i < in->size(); i++)
         {
             inVector.push_back(in->at(i).toFloat());
         }
+
+        clock_t start1, end1;
+        start1 = clock();
 
         cppflow::tensor input = cppflow::tensor(inVector, shape);
         input = cppflow::expand_dims(input, 0);
@@ -66,9 +58,135 @@ namespace RenderFlow
 
         if (output.dtype() == TF_HALF)
             output = cppflow::cast(output, TF_HALF, TF_FLOAT);
-        return EScript::Array::create(output.get_data<float>());
+
+        end1 = clock();
+        std::cout << "predict: " << (end1-start1) << std::endl;
+
+        EScript::Array *result = EScript::Array::create(output.get_data<float>());
+
+        end = clock();
+        std::cout << "predict': " << (end-start) << std::endl;
+
+        return result;
     }
 
+    EScript::Array *uint8ToFloat(EScript::Array *in)
+    {
+        clock_t start, end;
+        start = clock();
+
+        std::vector<float> out;
+        for (int i = 0; i < in->size(); i++)
+            out.push_back(in->at(i).toFloat() / 255);
+
+        std::cout << "uint8ToFloat: " << (clock() - start) << std::endl;
+
+        EScript::Array *result = EScript::Array::create(out);
+
+        end = clock();
+        std::cout << "uint8ToFloat': " << (end-start) << std::endl;
+
+        return result;
+    }
+
+    EScript::Array *floatToUint8(EScript::Array *in)
+    {
+        clock_t start, end;
+        start = clock();
+
+        std::vector<int> out;
+        for (int i = 0; i < in->size(); i++)
+            out.push_back(std::clamp(in->at(i).toFloat(), 0.0f, 1.0f) * 255);
+
+        std::cout << "floatToUint8: " << (clock()-start) << std::endl;
+        EScript::Array *result = EScript::Array::create(out);
+        
+        end = clock();
+        std::cout << "floatToUint8': " << (end-start) << std::endl;
+
+        return result;
+    }
+
+    EScript::Array *splitscreenDim(EScript::Array *dim1, EScript::Array *dim2)
+    {
+        int zoom1 = std::max(1, dim2->at(1).toInt() / dim1->at(1).toInt());
+        int zoom2 = std::max(1, dim1->at(1).toInt() / dim2->at(1).toInt());
+
+        int width1 = zoom1 * dim1->at(0).toInt();
+        int width2 = zoom2 * dim2->at(0).toInt();
+        int height1 = zoom1 * dim1->at(1).toInt();
+        int height2 = zoom2 * dim2->at(1).toInt();
+
+        int height = std::max(height1, height2);
+        int offset1 = (height - height1) / 2;
+        int offset2 = (height - height2) / 2;
+
+        int width = width1 + width2;
+        int border = width / 300;
+        width += border;
+
+        return EScript::Array::create(std::vector<int>{width, height});
+    }
+
+    EScript::Array *splitscreen(EScript::Array *in1, EScript::Array *dim1, EScript::Array *in2, EScript::Array *dim2)
+    {
+        clock_t start, end;
+        start = clock();
+
+        std::vector<uint8_t> inV1;
+        for (int i = 0; i < in1->size(); i++)
+        {
+            inV1.push_back(in1->at(i).toInt());
+        }
+        std::vector<uint8_t> inV2;
+        for (int i = 0; i < in2->size(); i++)
+        {
+            inV1.push_back(in2->at(i).toInt());
+        }
+
+        clock_t start1, end1;
+        start1 = clock();
+
+        int zoom1 = std::max(1, dim2->at(1).toInt() / dim1->at(1).toInt());
+        int zoom2 = std::max(1, dim1->at(1).toInt() / dim2->at(1).toInt());
+
+        int width1 = zoom1 * dim1->at(0).toInt();
+        int width2 = zoom2 * dim2->at(0).toInt();
+        int height1 = zoom1 * dim1->at(1).toInt();
+        int height2 = zoom2 * dim2->at(1).toInt();
+
+        int height = std::max(height1, height2);
+        int offset1 = (height - height1) / 2;
+        int offset2 = (height - height2) / 2;
+
+        int width = width1 + width2;
+        int border = width / 300;
+        width += border;
+
+        std::vector<int> out(3 * width * height, 0);
+
+        for (int y = 0; y < height1; y++)
+            for (int x = 0; x < width1; x++)
+                for (int i = 0; i < 3; i++)
+                    out[3 * (width * (y + offset1) + x) + i] = in1->at(3 * ((width1 / zoom1) * (y / zoom1) + (x / zoom1)) + i).toInt();
+        for (int y = 0; y < height2; y++)
+            for (int x = 0; x < width2; x++)
+                for (int i = 0; i < 3; i++)
+                    out[3 * (width * (y + offset2) + width1 + border + x) + i] = in2->at(3 * ((width2 / zoom2) * (y / zoom2) + (x / zoom2)) + i).toInt();
+
+        std::cout << "splitscreen: " << (clock()-start1) << std::endl;
+
+        EScript::Array *array = EScript::Array::create();
+        array->pushBack(EScript::Array::create(out));
+        array->pushBack(EScript::Array::create(std::vector<int>{width, height}));
+
+        end = clock();
+        std::cout << "splitscreen': " << (end-start) << std::endl;
+
+        return array;
+    }
+
+    // TODO remove
     // Output "Hello World!" to the console.
     void helloWorld()
     {
@@ -113,6 +231,10 @@ namespace RenderFlow
                         return thisEObj;
                     });
 
+        ES_FUNCTION(lib, "predict", 1, 1, {
+            return predict(parameter[0].to<EScript::Array *>(rt));
+        });
+
         ES_FUNCTION(lib, "uint8ToFloat", 1, 1,
                     {
                         return uint8ToFloat(parameter[0].to<EScript::Array *>(rt));
@@ -123,10 +245,15 @@ namespace RenderFlow
                         return floatToUint8(parameter[0].to<EScript::Array *>(rt));
                     });
 
+        ES_FUNCTION(lib, "splitscreenDim", 2, 2,
+                    {
+                        return splitscreenDim(parameter[0].to<EScript::Array *>(rt), parameter[1].to<EScript::Array *>(rt));
+                    });
 
-        ES_FUNCTION(lib, "predict", 1, 1, {
-            return predict(parameter[0].to<EScript::Array *>(rt));
-        });
+        ES_FUNCTION(lib, "splitscreen", 4, 4,
+                    {
+                        return splitscreen(parameter[0].to<EScript::Array *>(rt), parameter[1].to<EScript::Array *>(rt), parameter[2].to<EScript::Array *>(rt), parameter[3].to<EScript::Array *>(rt));
+                    });
     }
 
 }
