@@ -6,6 +6,7 @@ var myFlow = new RenderFlow.Flow({
     RenderFlow.Flow.MODEL_INPUT: 'serving_default_dense_6_input:0',
     RenderFlow.Flow.MODEL_OUTPUT: 'StatefulPartitionedCall:0',
     RenderFlow.Flow.PRERENDER: false,
+    RenderFlow.Flow.DATA_FROM_FLOAT: true,
     RenderFlow.Flow.DIM: [64, 64],
     RenderFlow.Flow.FORMAT: 'MONO_COLORMAP'
 });

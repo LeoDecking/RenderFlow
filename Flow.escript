@@ -3,15 +3,21 @@ static T = new Type;
 T._properties @(private) := void;
 
 T.NAME ::= 'name';
+
 T.MODEL ::= 'model';
 T.MODEL_FROZEN_GRAPH ::= 'modelFrozenGraph';
 T.MODEL_SHAPE ::= 'modelShape';
 T.MODEL_INPUT ::= 'modelInput';
 T.MODEL_OUTPUT ::= 'modelOutput';
+
 T.PRERENDER ::= 'prerender';
 T.PRERENDER_DIM ::= 'prerenderDim';
+T.PRERENDER_DIRECT ::= 'prerenderDirect';
+T.PRERENDER_DIRECT_CACHE ::= 'prerenderDirectCache';
 T.PRERENDER_SPLITSCREEN ::= 'prerenderSplitscreen';
+
 T.DIM ::= 'dim';
+T.DATA_FROM_FLOAT ::= 'dataFromFloat';
 T.FORMAT ::= 'format';
 
 /*
@@ -42,7 +48,10 @@ T.getPrerender		        ::= fn(){	return this._properties[T.PRERENDER];	};
 T.getPrerenderDim		    ::= fn(){	return this._properties[T.PRERENDER_DIM];	};
 T.getPrerenderDimX		    ::= fn(){	return this._properties[T.PRERENDER_DIM][0];	};
 T.getPrerenderDimY		    ::= fn(){	return this._properties[T.PRERENDER_DIM][1];	};
+T.getPrerenderDirect   ::= fn(){	return this._properties[T.PRERENDER_DIRECT];	};
+T.getPrerenderDirectCache   ::= fn(){	return this._properties[T.PRERENDER_DIRECT_CACHE];	};
 T.getPrerenderSplitscreen   ::= fn(){	return this._properties[T.PRERENDER_SPLITSCREEN];	};
+T.getDataFromFloat		    ::= fn(){	return this._properties[T.DATA_FROM_FLOAT];	};
 T.getDim		            ::= fn(){	return this._properties[T.DIM];	};
 T.getDimX		            ::= fn(){	return this._properties[T.DIM][0];	};
 T.getDimY		            ::= fn(){	return this._properties[T.DIM][1];	};
