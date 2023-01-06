@@ -17,9 +17,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 # add C++ source files to the project
 add_library(${PROJECT_NAME} SHARED
     src/Main.cpp
-    src/ELibRenderFlow.cpp # change this according to your project name
+    src/ELibRenderFlow.cpp
     # add your own .cpp files here
+	src/PythonTest.cpp
 )
+
+find_package(Python REQUIRED Development)
+target_link_libraries(${PROJECT_NAME} PRIVATE Python::Python)
 
 # TODO Unix/MacOS
 # TODO bundle tensorflow.dll

@@ -29,6 +29,8 @@
 #include <time.h>
 #include <algorithm>
 
+#include "PythonTest.h"
+
 namespace RenderFlow
 {
 
@@ -187,6 +189,12 @@ namespace RenderFlow
         ES_FUNCTION(lib, "helloWorld", 0, 0,
                     {
                         helloWorld();
+                        return thisEObj;
+                    });
+
+        ES_FUNCTION(lib, "helloPython", 0, 0,
+                    {
+                        PythonTest::test();
                         return thisEObj;
                     });
 
