@@ -19,7 +19,7 @@ add_library(${PROJECT_NAME} SHARED
     src/Main.cpp
     src/ELibRenderFlow.cpp
     # add your own .cpp files here
-	src/PythonTest.cpp
+	src/PythonRender.cpp
 )
 
 find_package(Python REQUIRED Development)

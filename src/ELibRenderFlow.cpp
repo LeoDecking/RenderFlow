@@ -29,10 +29,12 @@
 #include <time.h>
 #include <algorithm>
 
-#include "PythonTest.h"
+#include "PythonRender.h"
 
 namespace RenderFlow
 {
+
+    std::string loadedPython;
 
     cppflow::model *model;
     std::string inputOperation;
@@ -68,7 +70,8 @@ namespace RenderFlow
 
         std::vector<float> out = output.get_data<float>();
 
-        if(cache) {
+        if (cache)
+        {
             lastInput = in;
             lastOutput = out;
         }
@@ -194,9 +197,22 @@ namespace RenderFlow
 
         ES_FUNCTION(lib, "helloPython", 0, 0,
                     {
-                        PythonTest::test();
+                        PythonRender::test();
                         return thisEObj;
                     });
+        // ES_FUNCTION(lib, "pythonFinalize", 0, 0,
+        //             {
+        //                 return PythonRender::finalize();
+        //             });
+        // ES_FUNCTION(lib, "pythonRender", 1, 1,
+        //             {
+        //                 EScript::Array *in = parameter[0].to<EScript::Array *>(rt);
+        //                 std::vector<uint8_t> inVector;
+        //                 for (int i = 0; i < in->size(); i++)
+        //                     inVector.push_back((uint8_t)in->at(i).toInt());
+
+        //                 return EScript::Array::create(PythonRender::renderToFloat(inVector));
+        //             });
 
         ES_FUNCTION(lib, "loadModel", 5, 5,
                     {
@@ -275,6 +291,53 @@ namespace RenderFlow
 
             return EScript::value(nullptr);
         });
+
+        // module
+        ES_FUNCTION(lib, "pythonInit", 1, 1,
+                    {
+                        if (loadedPython == parameter[0].toString())
+                            return true;
+
+                        if (!loadedPython.empty())
+                            PythonRender::finalize();
+
+                        if (!PythonRender::init(parameter[0].toString()))
+                            return false;
+                        loadedPython = parameter[0].toString();
+
+                        return true;
+                    });
+
+        // out, floatToUint8=false, colormap=false
+        ES_FUNCTION(lib, "pythonRenderTexture", 1, 3, {
+            // time_t start = clock();
+            std::vector<float> out = PythonRender::render({});
+            // std::cout << "time python: " << clock() - start << "ms\n";
+
+            // start = clock();
+            setTextureData(parameter[0].to<Rendering::Texture &>(rt), out, parameter[1].toBool(false), parameter[2].toBool(false));
+            // std::cout << "time setTextureData: " << clock() - start << "ms\n";
+
+            return EScript::value(nullptr);
+        });
+
+        // renderingContext, in, out, floatToUint8=false, colormap=false
+        ES_FUNCTION(lib, "pythonPRenderTexture", 3, 5, {
+            // time_t start = clock();
+            std::vector<int> in = getTextureData(parameter[0].to<Rendering::RenderingContext &>(rt), parameter[1].to<Rendering::Texture &>(rt));
+            // std::cout << "time getTextureDataAsFloat: " << clock() - start << "ms\n";
+
+            // start = clock();
+            std::vector<float> out = PythonRender::render(in);
+            // std::cout << "time predict: " << clock() - start << "ms\n";
+
+            // start = clock();
+            setTextureData(parameter[2].to<Rendering::Texture &>(rt), out, parameter[4].toBool(false), parameter[4].toBool(false));
+            // std::cout << "time setTextureData: " << clock() - start << "ms\n";
+
+            return EScript::value(nullptr);
+        });
+        
     }
 
 }

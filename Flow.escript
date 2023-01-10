@@ -4,6 +4,8 @@ T._properties @(private) := void;
 
 T.NAME ::= 'name';
 
+T.PYTHON_PATH ::= 'pythonPath';
+
 T.MODEL ::= 'model';
 T.MODEL_FROZEN_GRAPH ::= 'modelFrozenGraph';
 T.MODEL_SHAPE ::= 'modelShape';
@@ -22,6 +24,7 @@ T.FORMAT ::= 'format';
 
 /*
     NAME:                   string
+    PYTHON_PATH:            path
     MODEL:                  path
     MODEL_FROZEN_GRAPH:     boolean
     MODEL_SHAPE:            [d1, ..., dn]
@@ -29,6 +32,8 @@ T.FORMAT ::= 'format';
     MODEL_OUTPUT:           string
     PRERENDER:              boolean
     PRERENDER_DIM:          [x, y]
+    PRERENDER_DIRECT:       boolean
+    PRERENDER_DIRECT_CACHE: boolean
     PRERENDER_SPLITSCREEN:  boolean
     DIM:                    [x, y]
     FORMAT:                 RGB | MONO | MONO_COLORMAP
@@ -39,6 +44,7 @@ T._constructor ::= fn( Map properties){
 };
 
 T.getName		            ::= fn(){	return this._properties[T.NAME];	};
+T.getPythonPath		            ::= fn(){	return this._properties[T.PYTHON_PATH];	};
 T.getModel		            ::= fn(){	return this._properties[T.MODEL];	};
 T.getModelFrozenGraph		::= fn(){	return this._properties[T.MODEL_FROZEN_GRAPH];	};
 T.getModelShape		        ::= fn(){	return this._properties[T.MODEL_SHAPE];	};

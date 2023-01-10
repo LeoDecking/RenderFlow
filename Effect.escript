@@ -47,7 +47,13 @@ Effect.begin @(override) ::= fn(){
         renderingContext.popFBO();
     }
     
-    if(flow.getPrerender() && flow.getPrerenderDirect()) {
+    if(flow.getPythonPath()) {
+        if(flow.getPrerender())
+            RenderFlow.pythonPRenderTexture(renderingContext, preColorTexture, colorTexture, flow.getDataFromFloat()==true, flow.getFormat() == 'MONO_COLORMAP');
+        else
+            RenderFlow.pythonRenderTexture(colorTexture, flow.getDataFromFloat()==true, flow.getFormat() == 'MONO_COLORMAP');
+    }
+    else if(flow.getPrerender() && flow.getPrerenderDirect()) {
         RenderFlow.directPrerender(renderingContext, preColorTexture, colorTexture, !(flow.getPrerenderDirectCache() === false), flow.getFormat() == 'MONO_COLORMAP');
 
     } else {
