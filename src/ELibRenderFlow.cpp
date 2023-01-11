@@ -194,12 +194,6 @@ namespace RenderFlow
                         helloWorld();
                         return thisEObj;
                     });
-
-        ES_FUNCTION(lib, "helloPython", 0, 0,
-                    {
-                        PythonRender::test();
-                        return thisEObj;
-                    });
         // ES_FUNCTION(lib, "pythonFinalize", 0, 0,
         //             {
         //                 return PythonRender::finalize();
@@ -292,20 +286,27 @@ namespace RenderFlow
             return EScript::value(nullptr);
         });
 
-        // module
-        ES_FUNCTION(lib, "pythonInit", 1, 1,
+        // module, forceReload=false
+        ES_FUNCTION(lib, "pythonInit", 1, 2,
                     {
-                        if (loadedPython == parameter[0].toString())
+                        if (!parameter[1].toBool(false) && loadedPython == parameter[0].toString())
                             return true;
 
                         if (!loadedPython.empty())
                             PythonRender::finalize();
 
-                        if (!PythonRender::init(parameter[0].toString()))
+                        if (!PythonRender::init(parameter[0].toString(), rt))
+                        {
                             return false;
+                            loadedPython = "";
+                        }
                         loadedPython = parameter[0].toString();
 
                         return true;
+                    });
+        ES_FUNCTION(lib, "pythonFinalize", 0, 0,
+                    {
+                        return PythonRender::finalize();
                     });
 
         // out, floatToUint8=false, colormap=false
@@ -337,7 +338,6 @@ namespace RenderFlow
 
             return EScript::value(nullptr);
         });
-        
     }
 
 }

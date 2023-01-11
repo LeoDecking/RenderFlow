@@ -1,52 +1,73 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+#include <EScript/Utils/StringData.h>
+#include <EScript/Utils/ObjArray.h>
+#include <EScript/Utils/RuntimeHelper.h>
 #include <iostream>
 #include <string>
 #include <time.h>
 #include "PythonRender.h"
 
-void PythonRender::test()
-{
-    wchar_t *program = Py_DecodeLocale("Test42", NULL);
-    if (program == NULL)
-    {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        // exit(1);
-    }
-    Py_SetProgramName(program); /* optional but recommended */
-    Py_Initialize();
-    PyRun_SimpleString("from time import time,ctime\n"
-                       "print('Today is', ctime(time()))\n");
-    if (Py_FinalizeEx() < 0)
-    {
-        // exit(120);
-    }
-    PyMem_RawFree(program);
-    std::cout << "Python juhuu!" << std::endl;
-}
+
+// TODO error when numpy is imported a second time, import it for all?
+
 
 PyObject *pyModule;
+EScript::Runtime *runtime;
 
-bool PythonRender::init(std::string path)
+static PyObject *eval(PyObject *self, PyObject *args)
 {
-    // Py_SetProgramName(std::wstring(L"../extPlugins/RenderFlow/Test.py").c_str());
+    const char *s;
+    if (!PyArg_ParseTuple(args, "s:code", &s))
+        return NULL;
+
+    std::string c = s;
+    if (c[c.size() - 1] != ';')
+        c += ';';
+
+    auto r = EScript::eval(*runtime, EScript::StringData(c));
+
+    if (!r.first)
+    {
+        // TODO error handling
+        return NULL;
+    }
+    return PyUnicode_FromString(r.second.toString().c_str());
+}
+
+static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escript code and return the result if primary types"}, {NULL, NULL, 0, NULL}};
+static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
+static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
+
+bool PythonRender::init(std::string path, EScript::Runtime &rt)
+{
+    runtime = &rt;
+
+    PyImport_AppendInittab("escript", &PyInit_escript);
+
     Py_Initialize();
     PyObject *pyPath = PyUnicode_DecodeFSDefault(path.c_str());
     pyModule = PyImport_Import(pyPath);
-    Py_DECREF(pyPath);
 
     if (pyModule == NULL)
     {
-        PyErr_Print();
+        if (PyErr_Occurred())
+            PyErr_Print();
         std::cout << "failed to load: " << path << std::endl;
+        Py_DECREF(pyPath);
         return false;
     }
+    Py_DECREF(pyPath);
+
     return true;
 }
 
 bool PythonRender::finalize()
 {
+    if (pyModule)
+        Py_DECREF(pyModule);
+    pyModule = NULL;
     if (Py_FinalizeEx() < 0)
     {
         std::cerr << "error while finalizing python" << std::endl;
@@ -86,7 +107,6 @@ std::vector<float> PythonRender::render(std::vector<int> prerender)
         std::cerr << "python render call failed." << std::endl;
         return {};
     }
-
 
     // TODO slow
     result = PySequence_Fast(result, "return type must be iterable"); // TODO reference count?
