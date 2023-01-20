@@ -6,12 +6,11 @@
 #include <EScript/Utils/RuntimeHelper.h>
 #include <iostream>
 #include <string>
+#include <filesystem>
 #include <time.h>
 #include "PythonRender.h"
 
-
 // TODO error when numpy is imported a second time, import it for all?
-
 
 PyObject *pyModule;
 EScript::Runtime *runtime;
@@ -44,9 +43,20 @@ bool PythonRender::init(std::string path, EScript::Runtime &rt)
 {
     runtime = &rt;
 
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+
+    // config.module_search_paths_set = 1;
+    // PyWideStringList_Append(&config.module_search_paths, std::filesystem::current_path().c_str());
+
     PyImport_AppendInittab("escript", &PyInit_escript);
 
-    Py_Initialize();
+    Py_InitializeFromConfig(&config); // TODO error checking
+
+    std::string p = "import sys;sys.path.append(\"" + std::filesystem::current_path().string() + "\")";
+    std::replace(p.begin(), p.end(), '\\', '/');
+    PyRun_SimpleString(p.c_str());
+
     PyObject *pyPath = PyUnicode_DecodeFSDefault(path.c_str());
     pyModule = PyImport_Import(pyPath);
 

@@ -320,14 +320,13 @@ namespace RenderFlow
             // std::cout << "time setTextureData: " << clock() - start << "ms\n";
 
             return EScript::value(nullptr);
-        });
 
+        });
         // renderingContext, in, out, floatToUint8=false, colormap=false
         ES_FUNCTION(lib, "pythonPRenderTexture", 3, 5, {
             // time_t start = clock();
             std::vector<int> in = getTextureData(parameter[0].to<Rendering::RenderingContext &>(rt), parameter[1].to<Rendering::Texture &>(rt));
             // std::cout << "time getTextureDataAsFloat: " << clock() - start << "ms\n";
-
             // start = clock();
             std::vector<float> out = PythonRender::render(in);
             // std::cout << "time predict: " << clock() - start << "ms\n";

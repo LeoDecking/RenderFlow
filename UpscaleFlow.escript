@@ -16,26 +16,6 @@ var upscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-// static lastPrerender = void;
-// static lastRender = void;
-
-
-// upscaleFlow.render @(override) := fn(prerender) {
-//     // if(lastPrerender == prerender) return lastRender;
-
-//     var in = RenderFlow.uint8ToFloat(prerender);
-//     var output = RenderFlow.predict(in);
-//     // var result = RenderFlow.floatToUint8(output);
-
-//     // result = splitscreen(prerender, result);
-
-//     // lastPrerender = prerender;
-//     // lastRender = result;
-
-//     // out(result);
-
-//     return output;
-// };
 
 
 
