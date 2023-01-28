@@ -41,58 +41,78 @@ static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escri
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 
-bool PythonRender::init(std::string path, EScript::Runtime &rt)
+bool PythonRender::init(EScript::Runtime &rt, std::string path)
 {
-    runtime = &rt;
+    if (!runtime)
+    {
+        runtime = &rt;
 
-    PyConfig config;
-    PyConfig_InitPythonConfig(&config);
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
 
-    // config.module_search_paths_set = 1;
-    // PyWideStringList_Append(&config.module_search_paths, std::filesystem::current_path().c_str());
+        // config.module_search_paths_set = 1;
+        // PyWideStringList_Append(&config.module_search_paths, std::filesystem::current_path().c_str());
 
-    PyImport_AppendInittab("escript", &PyInit_escript);
+        PyImport_AppendInittab("escript", &PyInit_escript);
 
-    Py_InitializeFromConfig(&config); // TODO error checking
+        Py_InitializeFromConfig(&config); // TODO error checking
 
-    import_array();
+        import_array();
+    }
+
+    return loadModule(path);
+    // if (!numpyImported)
+    // {
+    //     PyRun_SimpleString("import numpy");
+    //     PyRun_SimpleString("print('import numpy')");
+    //     numpyImported = true;
+    // }
 
     // TODO path
     // std::string p = "import sys;sys.path.append(\"" + std::filesystem::current_path().string() + "\")";
     // std::replace(p.begin(), p.end(), '\\', '/');
     // PyRun_SimpleString(p.c_str());
+}
 
+bool PythonRender::loadModule(std::string path)
+{
     PyObject *pyPath = PyUnicode_DecodeFSDefault(path.c_str());
-    pyModule = PyImport_Import(pyPath);
+    PyObject *loadedModule = PyImport_GetModule(pyPath);
+
+    if (pyModule)
+        Py_DECREF(pyModule);
+
+    pyModule = loadedModule ? PyImport_ReloadModule(loadedModule) : PyImport_Import(pyPath);
 
     if (pyModule == NULL)
     {
         if (PyErr_Occurred())
             PyErr_Print();
-        std::cout << "failed to load: " << path << std::endl;
+        std::cout << (loadedModule ? "failed to reload: " : "failed to load: ") << path << std::endl;
         Py_DECREF(pyPath);
         return false;
     }
+
     Py_DECREF(pyPath);
-
     return true;
 }
 
-bool PythonRender::finalize()
-{
-    if (pyModule)
-        Py_DECREF(pyModule);
-    pyModule = NULL;
-    if (Py_FinalizeEx() < 0)
-    {
-        std::cerr << "error while finalizing python" << std::endl;
-        return false;
-    }
-    return true;
-}
+// crashes with numpy
+// bool PythonRender::finalize()
+// {
+//     if (pyModule)
+//         Py_DECREF(pyModule);
+//     pyModule = NULL;
+//     if (Py_FinalizeEx() < 0)
+//     {
+//         std::cerr << "error while finalizing python" << std::endl;
+//         return false;
+//     }
+//     return true;
+// }
 
 // TODO NPY_FLOAT64 only when float?
-std::vector<float> PythonRender::render(std::vector<int> prerender)
+std::vector<float> PythonRender::render(std::vector<int> &prerender)
 {
     // time_t start = clock();
 
