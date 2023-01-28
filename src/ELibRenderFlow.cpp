@@ -42,6 +42,7 @@ namespace RenderFlow
     std::vector<int64_t> shape;
 
     std::vector<float> lastInput;
+    std::vector<int> lastInputI;
     std::vector<float> lastOutput;
 
     std::vector<float> predict(std::vector<float> in, bool cache)
@@ -78,40 +79,65 @@ namespace RenderFlow
 
         return out;
     }
+    std::vector<float> prerenderedPython(std::vector<int> in, bool cache)
+    {
+        if (cache && in.size() == lastInputI.size())
+        {
+            bool same = true;
+            for (int i = 0; i < in.size(); i++)
+                if (in[i] != lastInputI[i])
+                {
+                    same = false;
+                    break;
+                }
+            if (same)
+                return lastOutput;
+        }
+
+        std::vector<float> out = PythonRender::render(in);
+
+        if (cache)
+        {
+            lastInputI = in;
+            lastOutput = out;
+        }
+
+        return out;
+    }
 
     EScript::Array *uint8ToFloat(EScript::Array *in)
     {
-        clock_t start, end;
-        start = clock();
+        // clock_t start, end;
+        // start = clock();
 
         std::vector<float> out;
         for (int i = 0; i < in->size(); i++)
             out.push_back(in->at(i).toFloat() / 255);
 
-        std::cout << "uint8ToFloat: " << (clock() - start) << std::endl;
+        // std::cout << "uint8ToFloat: " << (clock() - start) << std::endl;
 
         EScript::Array *result = EScript::Array::create(out);
 
-        end = clock();
-        std::cout << "uint8ToFloat': " << (end - start) << std::endl;
+        // end = clock();
+        // std::cout << "uint8ToFloat': " << (end - start) << std::endl;
 
         return result;
     }
 
     EScript::Array *floatToUint8(EScript::Array *in)
     {
-        clock_t start, end;
-        start = clock();
+        // clock_t start, end;
+        // start = clock();
 
         std::vector<int> out;
         for (int i = 0; i < in->size(); i++)
             out.push_back(std::clamp(in->at(i).toFloat(), 0.0f, 1.0f) * 255);
 
-        std::cout << "floatToUint8: " << (clock() - start) << std::endl;
+        // std::cout << "floatToUint8: " << (clock() - start) << std::endl;
         EScript::Array *result = EScript::Array::create(out);
 
-        end = clock();
-        std::cout << "floatToUint8': " << (end - start) << std::endl;
+        // end = clock();
+        // std::cout << "floatToUint8': " << (end - start) << std::endl;
 
         return result;
     }
@@ -155,6 +181,12 @@ namespace RenderFlow
         std::vector<uint8_t> dataVector;
 
         const uint32_t rowSize = bitmap->getWidth() * bitmap->getPixelFormat().getComponentCount();
+        if (data.size() != rowSize * bitmap->getHeight())
+        {
+            std::cerr << "data has wrong size: " << data.size() << ", but should be " << bitmap->getWidth() << " * " << bitmap->getHeight() << " * " << bitmap->getPixelFormat().getComponentCount() << " = " << rowSize * bitmap->getHeight() << std::endl;
+            return;
+        }
+
         for (uint32_t y = 0; y < bitmap->getHeight(); y++)
             for (uint32_t x = 0; x < rowSize; x++) // flip rows
             {
@@ -311,28 +343,29 @@ namespace RenderFlow
 
         // out, floatToUint8=false, colormap=false
         ES_FUNCTION(lib, "pythonRenderTexture", 1, 3, {
-            // time_t start = clock();
+            time_t start = clock();
             std::vector<float> out = PythonRender::render({});
-            // std::cout << "time python: " << clock() - start << "ms\n";
+            std::cout << "time python: " << clock() - start << "ms\n";
 
-            // start = clock();
+            start = clock();
             setTextureData(parameter[0].to<Rendering::Texture &>(rt), out, parameter[1].toBool(false), parameter[2].toBool(false));
-            // std::cout << "time setTextureData: " << clock() - start << "ms\n";
+            std::cout << "time setTextureData: " << clock() - start << "ms\n";
 
             return EScript::value(nullptr);
-
         });
-        // renderingContext, in, out, floatToUint8=false, colormap=false
-        ES_FUNCTION(lib, "pythonPRenderTexture", 3, 5, {
+        // renderingContext, in, out, cache=true, floatToUint8=false, colormap=false
+        ES_FUNCTION(lib, "pythonPRenderTexture", 3, 6, {
             // time_t start = clock();
             std::vector<int> in = getTextureData(parameter[0].to<Rendering::RenderingContext &>(rt), parameter[1].to<Rendering::Texture &>(rt));
             // std::cout << "time getTextureDataAsFloat: " << clock() - start << "ms\n";
             // start = clock();
-            std::vector<float> out = PythonRender::render(in);
+
+            std::vector<float> out = prerenderedPython(in, parameter[3].toBool(true));
+
             // std::cout << "time predict: " << clock() - start << "ms\n";
 
             // start = clock();
-            setTextureData(parameter[2].to<Rendering::Texture &>(rt), out, parameter[4].toBool(false), parameter[4].toBool(false));
+            setTextureData(parameter[2].to<Rendering::Texture &>(rt), out, parameter[4].toBool(false), parameter[5].toBool(false));
             // std::cout << "time setTextureData: " << clock() - start << "ms\n";
 
             return EScript::value(nullptr);

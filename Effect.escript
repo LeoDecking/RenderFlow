@@ -49,7 +49,7 @@ Effect.begin @(override) ::= fn(){
     
     if(flow.getPythonPath()) {
         if(flow.getPrerender())
-            RenderFlow.pythonPRenderTexture(renderingContext, preColorTexture, colorTexture, flow.getDataFromFloat()==true, flow.getFormat() == 'MONO_COLORMAP');
+            RenderFlow.pythonPRenderTexture(renderingContext, preColorTexture, colorTexture, !(flow.getPrerenderDirectCache() === false), flow.getDataFromFloat()==true, flow.getFormat() == 'MONO_COLORMAP');
         else
             RenderFlow.pythonRenderTexture(colorTexture, flow.getDataFromFloat()==true, flow.getFormat() == 'MONO_COLORMAP');
     }

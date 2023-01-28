@@ -1,5 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "numpy/arrayobject.h"
 
 #include <EScript/Utils/StringData.h>
 #include <EScript/Utils/ObjArray.h>
@@ -53,9 +55,12 @@ bool PythonRender::init(std::string path, EScript::Runtime &rt)
 
     Py_InitializeFromConfig(&config); // TODO error checking
 
-    std::string p = "import sys;sys.path.append(\"" + std::filesystem::current_path().string() + "\")";
-    std::replace(p.begin(), p.end(), '\\', '/');
-    PyRun_SimpleString(p.c_str());
+    import_array();
+
+    // TODO path
+    // std::string p = "import sys;sys.path.append(\"" + std::filesystem::current_path().string() + "\")";
+    // std::replace(p.begin(), p.end(), '\\', '/');
+    // PyRun_SimpleString(p.c_str());
 
     PyObject *pyPath = PyUnicode_DecodeFSDefault(path.c_str());
     pyModule = PyImport_Import(pyPath);
@@ -86,6 +91,7 @@ bool PythonRender::finalize()
     return true;
 }
 
+// TODO NPY_FLOAT64 only when float?
 std::vector<float> PythonRender::render(std::vector<int> prerender)
 {
     // time_t start = clock();
@@ -97,18 +103,14 @@ std::vector<float> PythonRender::render(std::vector<int> prerender)
         return {};
     }
 
-    PyObject *list = PyList_New(prerender.size());
-    for (size_t i = 0; i < prerender.size(); i++)
-        PyList_SET_ITEM(list, i, PyLong_FromLong(prerender[i]));
-    PyObject *args = Py_BuildValue("(O)", list);
+    npy_intp dims[1] = {(long long int)prerender.size()};
+    PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_INT32, prerender.data());
+    PyObject *args = Py_BuildValue("(O)", in_array);
 
     PyObject *result = PyObject_CallObject(pyFunction, args);
 
-    // std::cout << "time call: " << clock() - start << std::endl;
-    // start = clock();
-
     Py_DECREF(args);
-    Py_DECREF(list);
+    Py_DECREF(in_array);
     Py_DECREF(pyFunction);
 
     if (!result)
@@ -118,28 +120,27 @@ std::vector<float> PythonRender::render(std::vector<int> prerender)
         return {};
     }
 
-    // TODO slow
-    result = PySequence_Fast(result, "return type must be iterable"); // TODO reference count?
-
-    if (!result)
-    {
-        PyErr_Print();
-        std::cerr << "wrong python render result type." << std::endl;
-        return {};
-    }
-
-    if (!result)
-        return {};
-
-    Py_ssize_t size = PySequence_Fast_GET_SIZE(result);
-    std::vector<float> vector(size);
-
-    // std::cout << "time prepare to c array: " << clock() - start << std::endl;
+    // std::cout << "time call: " << clock() - start << std::endl;
     // start = clock();
 
-    for (size_t i = 0; i < size; i++)
-        vector[i] = PyFloat_AS_DOUBLE(PyNumber_Float(PySequence_Fast_GET_ITEM(result, i)));
+    if (!PyArray_Check(result))
+    {
+        std::cerr << "wrong return type: use numpy array" << std::endl;
+        return {};
+    }
+    PyArrayObject *array = (PyArrayObject *)PyArray_FromArray((PyArrayObject *)result, PyArray_DescrFromType(NPY_FLOAT64), 0);
+    array = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
 
+    // std::cout << "time prepare numpy array: " << clock() - start << std::endl;
+    // start = clock();
+
+    Py_ssize_t size = PyArray_SIZE(array);
+    std::vector<float> vector(size);
+
+    for (size_t i = 0; i < size; i++)
+    {
+        vector[i] = *(double *)PyArray_GETPTR1(array, i);
+    }
     // std::cout << "time to c array: " << clock() - start << std::endl;
 
     return vector;

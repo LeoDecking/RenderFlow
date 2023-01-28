@@ -22,8 +22,10 @@ add_library(${PROJECT_NAME} SHARED
 	src/PythonRender.cpp
 )
 
-find_package(Python REQUIRED Development)
-target_link_libraries(${PROJECT_NAME} PRIVATE Python::Python)
+find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PYTHON_LIBRARIES} Python3::NumPy)
+# target_link_libraries(${PROJECT_NAME} PRIVATE Python3::NumPy)
 
 # TODO Unix/MacOS
 # TODO bundle tensorflow.dll
