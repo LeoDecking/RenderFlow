@@ -14,6 +14,8 @@ var myFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'MONO_COLORMAP'
 });
 
+static cache = false;
+
 myFlow.render @(override) := fn(prerender) {
     var cam = PADrend.getActiveCamera();
     // // var angles = RenderFlow.getCameraAngles(cam);
@@ -24,7 +26,7 @@ myFlow.render @(override) := fn(prerender) {
 
     var input = [cam.getWorldPosition().getX() / 10, cam.getWorldPosition().getZ() / 10];
     // out(input[0], ", ", input[1],"\n");
-    var output = RenderFlow.predict(input);
+    var output = RenderFlow.predict(input, cache);
     return output;
 };
 

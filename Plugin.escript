@@ -24,7 +24,9 @@ plugin.init @(override) := fn() {
 	load(__DIR__ + "/MyFlow.escript"); // TODO remove
 	load(__DIR__ + "/UpscaleFlow.escript"); // TODO remove
 	load(__DIR__ + "/PythonFlow.escript"); // TODO remove
+	load(__DIR__ + "/PythonMyFlow.escript"); // TODO remove
 	load(__DIR__ + "/PythonPrerenderFlow.escript"); // TODO remove
+	load(__DIR__ + "/PythonUpscaleFlow.escript"); // TODO remove
 
 	 // Create an instance of the LibraryLoader.
     var loader = new (Std.module("LibUtilExt/LibraryLoader"));

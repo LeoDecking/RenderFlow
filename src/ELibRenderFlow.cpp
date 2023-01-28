@@ -181,9 +181,9 @@ namespace RenderFlow
         std::vector<uint8_t> dataVector;
 
         const uint32_t rowSize = bitmap->getWidth() * bitmap->getPixelFormat().getComponentCount();
-        if (data.size() != rowSize * bitmap->getHeight())
+        if (data.size() != rowSize * bitmap->getHeight() / (colormap ? 3 : 1))
         {
-            std::cerr << "data has wrong size: " << data.size() << ", but should be " << bitmap->getWidth() << " * " << bitmap->getHeight() << " * " << bitmap->getPixelFormat().getComponentCount() << " = " << rowSize * bitmap->getHeight() << std::endl;
+            std::cerr << "data has wrong size: " << data.size() << ", but should be " << bitmap->getWidth() << " * " << bitmap->getHeight() << " * " << bitmap->getPixelFormat().getComponentCount() / (colormap ? 3 : 1) << " = " << rowSize * bitmap->getHeight() / (colormap ? 3 : 1) << std::endl;
             return;
         }
 
