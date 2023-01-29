@@ -54,12 +54,13 @@ static activate = fn(flow) {
 			RenderFlow.loadModel(flow.getModel(), flow.getModelFrozenGraph(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
 			loadedModel = flow.getModel() + flow.getModelInput() + flow.getModelOutput();
 		}
-		if(flow.getPythonPath()) RenderFlow.pythonInit(flow.getPythonPath());
 
 		loadedFlow = flow;
 
 		PADrend.executeCommand(fn(){PPEffectPlugin.loadAndSetEffect("../extPlugins/RenderFlow/Effect.escript");});
 	}
+	// python is reloaded every time
+	if(flow.getPythonPath()) RenderFlow.pythonInit(flow.getPythonPath());
 };
 static deactivate = fn() {
 	if(loadedFlow) {

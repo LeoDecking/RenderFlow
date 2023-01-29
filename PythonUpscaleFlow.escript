@@ -1,6 +1,6 @@
 var pythonUpscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'pythonUpscale',
-    RenderFlow.Flow.PYTHON_PATH: 'Upscaling',
+    RenderFlow.Flow.PYTHON_PATH: 'Upscaling2',
 
     // RenderFlow.Flow.MODEL: '../extPlugins/RenderFlow/upscaleModel/model.pb',
     // RenderFlow.Flow.MODEL_FROZEN_GRAPH: true,
