@@ -61,41 +61,23 @@ bool PythonRender::init(EScript::Runtime &rt, std::string path)
         import_array();
     }
 
-    return loadModule(path);
-    // if (!numpyImported)
-    // {
-    //     PyRun_SimpleString("import numpy");
-    //     PyRun_SimpleString("print('import numpy')");
-    //     numpyImported = true;
-    // }
+    PyRun_SimpleString("import importlib.util; import sys");
 
-    // TODO path
-    // std::string p = "import sys;sys.path.append(\"" + std::filesystem::current_path().string() + "\")";
-    // std::replace(p.begin(), p.end(), '\\', '/');
-    // PyRun_SimpleString(p.c_str());
+    return loadModule(path);
 }
 
 bool PythonRender::loadModule(std::string path)
 {
-    PyObject *pyPath = PyUnicode_DecodeFSDefault(path.c_str());
-    PyObject *loadedModule = PyImport_GetModule(pyPath);
-
     if (pyModule)
         Py_DECREF(pyModule);
 
-    pyModule = loadedModule ? PyImport_ReloadModule(loadedModule) : PyImport_Import(pyPath);
+    std::replace(path.begin(), path.end(), '\'', ' ');
+    PyRun_SimpleString(("spec = importlib.util.spec_from_file_location('renderModule', '" + path + "'); module = importlib.util.module_from_spec(spec);sys.modules['renderModule'] = module;spec.loader.exec_module(module)").c_str());
 
-    if (pyModule == NULL)
-    {
-        if (PyErr_Occurred())
-            PyErr_Print();
-        std::cout << (loadedModule ? "failed to reload: " : "failed to load: ") << path << std::endl;
-        Py_DECREF(pyPath);
-        return false;
-    }
+    PyObject *m = PyImport_AddModule("__main__");
+    pyModule = PyObject_GetAttrString(m, "module");
 
-    Py_DECREF(pyPath);
-    return true;
+    return pyModule != NULL;
 }
 
 // crashes with numpy

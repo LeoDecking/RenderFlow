@@ -1,6 +1,6 @@
 var pythonFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'python',
-    RenderFlow.Flow.PYTHON_PATH: 'Test',
+    RenderFlow.Flow.PYTHON_PATH: __DIR__+'/Test.py',
 
     RenderFlow.Flow.PRERENDER: false,
     

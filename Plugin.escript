@@ -21,12 +21,12 @@ plugin.init @(override) := fn() {
 	RenderFlow.getFlow := fn() { return loadedFlow; };
 
 	load(__DIR__ + "/Flow.escript");
-	load(__DIR__ + "/MyFlow.escript"); // TODO remove
-	load(__DIR__ + "/UpscaleFlow.escript"); // TODO remove
-	load(__DIR__ + "/PythonFlow.escript"); // TODO remove
-	load(__DIR__ + "/PythonMyFlow.escript"); // TODO remove
-	load(__DIR__ + "/PythonPrerenderFlow.escript"); // TODO remove
-	load(__DIR__ + "/PythonUpscaleFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/MyFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/UpscaleFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/PythonFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/PythonMyFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/PythonPrerenderFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/PythonUpscaleFlow.escript"); // TODO remove
 
 	 // Create an instance of the LibraryLoader.
     var loader = new (Std.module("LibUtilExt/LibraryLoader"));

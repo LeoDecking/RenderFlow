@@ -33,6 +33,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${PYTHON_LIBRARIES} Python3::NumPy
 target_link_libraries(${PROJECT_NAME} PRIVATE tensorflow)
 configure_file(${CMAKE_SOURCE_DIR}/lib/tensorflow.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tensorflow.dll COPYONLY)
 
+# find_package(cppflow REQUIRED)
+# target_include_directories(${PROJECT_NAME} PUBLIC cppflow::cppflow)
+# target_link_libraries(${PROJECT_NAME} PUBLIC cppflow::cppflow)
+
 
 # pass the project name to the Main.cpp file in form of the define 'LIBRARY_NAME'
 set_source_files_properties(src/Main.cpp PROPERTIES COMPILE_DEFINITIONS LIBRARY_NAME="${PROJECT_NAME}")
