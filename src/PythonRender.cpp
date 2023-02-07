@@ -13,7 +13,7 @@
 #include <time.h>
 #include "PythonRender.h"
 
-// TODO error when numpy is imported a second time, import it for all?
+PyObject *pyTensorflowModule;
 
 PyObject *pyModule;
 EScript::Runtime *runtime;
@@ -29,7 +29,7 @@ static PyObject *eval(PyObject *self, PyObject *args)
         c += ';';
 
     auto r = EScript::eval(*runtime, EScript::StringData(c));
-
+    // TODO escript decref?
     if (!r.first)
     {
         // TODO error handling
@@ -42,7 +42,7 @@ static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escri
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 
-bool PythonRender::init(EScript::Runtime &rt, std::string path)
+bool PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 {
     if (!runtime)
     {
@@ -61,9 +61,12 @@ bool PythonRender::init(EScript::Runtime &rt, std::string path)
         import_array();
     }
 
-    PyRun_SimpleString("import importlib.util; import sys");
+    PyRun_SimpleString("import importlib; import importlib.util; import sys");
 
-    return loadModule(path);
+    if (path.size())
+        return loadModule(path);
+    else
+        return true;
 }
 
 bool PythonRender::loadModule(std::string path)
@@ -76,8 +79,132 @@ bool PythonRender::loadModule(std::string path)
 
     PyObject *m = PyImport_AddModule("__main__");
     pyModule = PyObject_GetAttrString(m, "module");
+    Py_DecRef(m); // ?
 
     return pyModule != NULL;
+}
+
+bool PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScript::Object *shape, std::string input_name, std::string output_name)
+{
+    // TODO
+    // importlib.reload(example_module)
+    if (pyTensorflowModule)
+    {
+        PyRun_SimpleString("del sys.modules['tensorflowModule']");
+    }
+
+    std::replace(pythonPath.begin(), pythonPath.end(), '\'', ' ');
+    std::replace(modelPath.begin(), modelPath.end(), '\'', ' ');
+    PyRun_SimpleString(("spec = importlib.util.spec_from_file_location('tensorflowModule', '" + pythonPath + "'); module = importlib.util.module_from_spec(spec);sys.modules['tensorflowModule'] = module;spec.loader.exec_module(module)").c_str());
+
+    PyObject *m = PyImport_AddModule("__main__");
+    pyTensorflowModule = PyObject_GetAttrString(m, "module");
+    Py_DecRef(m); // ?
+
+    PyObject *pyFunction = PyObject_GetAttrString(pyTensorflowModule, "loadModel");
+    if (!pyFunction || !PyCallable_Check(pyFunction))
+    {
+        std::cerr << "python loadModel function not found." << std::endl;
+        return {};
+    }
+
+    PyObject *pathObj = PyUnicode_FromString(modelPath.c_str());
+    PyObject *shapeObj = escriptToPython(shape);
+    PyObject *inObj = PyUnicode_FromString(input_name.c_str());
+    PyObject *outObj = PyUnicode_FromString(output_name.c_str());
+
+    PyObject *args = PyTuple_New(4);
+    PyTuple_SetItem(args, 0, pathObj);
+    PyTuple_SetItem(args, 1, shapeObj);
+    PyTuple_SetItem(args, 2, inObj);
+    PyTuple_SetItem(args, 3, outObj);
+
+    PyObject *result = PyObject_CallObject(pyFunction, args);
+
+    // Py_DECREF(pathObj);
+    // Py_DECREF(shapeObj);
+    // Py_DECREF(inObj);
+    // Py_DECREF(outObj);
+    Py_DECREF(args);
+    Py_DECREF(pyFunction);
+
+    if (!result)
+    {
+        PyErr_Print();
+        std::cerr << "python load module call failed." << std::endl;
+        return {};
+    }
+
+    Py_DECREF(result);
+
+    return pyTensorflowModule != NULL;
+}
+
+std::vector<float> lastInput;
+std::vector<float> lastOutput;
+
+std::vector<float> PythonRender::predict(std::vector<float> &input, bool cache)
+{
+    if (cache && input.size() == lastInput.size())
+    {
+        bool same = true;
+        for (int i = 0; i < input.size(); i++)
+            if (input[i] != lastInput[i])
+            {
+                same = false;
+                break;
+            }
+        if (same)
+            return lastOutput;
+    }
+
+    // time_t start = clock();
+
+    PyObject *pyFunction = PyObject_GetAttrString(pyTensorflowModule, "predict");
+    if (!pyFunction || !PyCallable_Check(pyFunction))
+    {
+        std::cerr << "python predict function not found." << std::endl;
+        return {};
+    }
+
+    npy_intp dims[1] = {(long long int)input.size()};
+    PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT32, input.data());
+    PyObject *args = Py_BuildValue("(O)", in_array);
+
+    PyObject *result = PyObject_CallObject(pyFunction, args);
+    Py_DECREF(args);
+    Py_DECREF(in_array);
+    Py_DECREF(pyFunction);
+
+    if (!result)
+    {
+        PyErr_Print();
+        std::cout << "python predict call failed." << std::endl;
+        return {};
+    }
+    // std::cout << "time call: " << clock() - start << std::endl;
+    // start = clock();
+
+    PyArrayObject *array = (PyArrayObject *)PyArray_FromArray((PyArrayObject *)result, PyArray_DescrFromType(NPY_FLOAT64), 0);
+    PyArrayObject *flattenedArray = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
+
+    // std::cout << "time prepare numpy array: " << clock() - start << std::endl;
+    // start = clock();
+
+    Py_ssize_t size = PyArray_SIZE(flattenedArray);
+    std::vector<float> vector(size);
+
+    for (size_t i = 0; i < size; i++)
+    {
+        vector[i] = *(double *)PyArray_GETPTR1(flattenedArray, i);
+    }
+    // std::cout << "time to c array: " << clock() - start << std::endl;
+
+    Py_DecRef((PyObject *)flattenedArray);
+    Py_DecRef((PyObject *)array);
+    Py_DecRef(result);
+
+    return vector;
 }
 
 // crashes with numpy
@@ -94,7 +221,6 @@ bool PythonRender::loadModule(std::string path)
 //     return true;
 // }
 
-// TODO matrices?
 PyObject *PythonRender::escriptToPython(EScript::Object *obj, bool hashable /* = false */)
 {
     if (dynamic_cast<EScript::Void *>(obj) || (obj == nullptr))
@@ -126,7 +252,6 @@ PyObject *PythonRender::escriptToPython(EScript::Object *obj, bool hashable /* =
     else if (EScript::Array *a = dynamic_cast<EScript::Array *>(obj))
     {
         EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(a->getIterator());
-
         PyObject *list = PyList_New(a->size());
         for (size_t i = 0; i < a->size(); i++)
             PyList_SET_ITEM(list, i, escriptToPython(a->at(i).get()));
@@ -165,7 +290,7 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
         return {};
     }
 
-    npy_intp dims[1] = {(long long int)prerender.size()};
+    npy_intp dims[1] = {(npy_intp)prerender.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_INT32, prerender.data());
     PyObject *args = Py_BuildValue("(O)", in_array);
 
@@ -191,19 +316,23 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
         return {};
     }
     PyArrayObject *array = (PyArrayObject *)PyArray_FromArray((PyArrayObject *)result, PyArray_DescrFromType(NPY_FLOAT64), 0);
-    array = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
+    PyArrayObject *flattenedArray = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
 
     // std::cout << "time prepare numpy array: " << clock() - start << std::endl;
     // start = clock();
 
-    Py_ssize_t size = PyArray_SIZE(array);
+    Py_ssize_t size = PyArray_SIZE(flattenedArray);
     std::vector<float> vector(size);
 
     for (size_t i = 0; i < size; i++)
     {
-        vector[i] = *(double *)PyArray_GETPTR1(array, i);
+        vector[i] = *(double *)PyArray_GETPTR1(flattenedArray, i);
     }
     // std::cout << "time to c array: " << clock() - start << std::endl;
+
+    Py_DecRef((PyObject *)flattenedArray);
+    Py_DecRef((PyObject *)array);
+    Py_DecRef(result);
 
     return vector;
 }

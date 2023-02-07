@@ -1,7 +1,5 @@
 #include "ELibRenderFlow.h"
 
-#include <cppflow/cppflow.h>
-
 #include <E_Util/E_Utils.h>
 #include <EScript/Basics.h>
 #include <EScript/Objects/Collections/Array.h>
@@ -36,49 +34,9 @@ namespace RenderFlow
 
     std::string loadedPython;
 
-    cppflow::model *model;
-    std::string inputOperation;
-    std::string outputOperation;
-    std::vector<int64_t> shape;
-
-    std::vector<float> lastInput;
     std::vector<int> lastInputI;
     std::vector<float> lastOutput;
 
-    std::vector<float> predict(std::vector<float> &in, bool cache)
-    {
-        if (cache && in.size() == lastInput.size())
-        {
-            bool same = true;
-            for (int i = 0; i < in.size(); i++)
-                if (in[i] != lastInput[i])
-                {
-                    same = false;
-                    break;
-                }
-            if (same)
-                return lastOutput;
-        }
-
-        cppflow::tensor input = cppflow::tensor(in, shape);
-        input = cppflow::expand_dims(input, 0);
-
-        cppflow::tensor output = (*model)({{inputOperation, input}}, {{outputOperation}})[0];
-        output = cppflow::squeeze(output, {0});
-
-        if (output.dtype() == TF_HALF)
-            output = cppflow::cast(output, TF_HALF, TF_FLOAT);
-
-        std::vector<float> out = output.get_data<float>();
-
-        if (cache)
-        {
-            lastInput = in;
-            lastOutput = out;
-        }
-
-        return out;
-    }
     std::vector<float> prerenderedPython(std::vector<int> &in, bool cache)
     {
         if (cache && in.size() == lastInputI.size())
@@ -205,47 +163,17 @@ namespace RenderFlow
         texture.dataChanged();
     }
 
-    // TODO remove
-    // Output "Hello World!" to the console.
-    void helloWorld()
-    {
-        std::cout << "Hello World!" << std::endl;
-
-        auto a = cppflow::tensor({1.0, 2.0, 3.0});
-        // Create a tensor of shape 3 filled with 1.0, b = [1.0, 1.0, 1.0]
-        auto b = cppflow::fill({3}, 1.0);
-
-        std::cout << a + b << std::endl;
-    }
 
     // Initializes your EScript bindings
     void init(EScript::Namespace *lib)
     {
-        ES_FUNCTION(lib, "helloWorld", 0, 0,
-                    {
-                        helloWorld();
-                        return thisEObj;
-                    });
-
+        // pythonPath, modelPath, shape, inputOperation, outputOperation
         ES_FUNCTION(lib, "loadModel", 5, 5,
                     {
-                        std::cout << "load: '" << parameter[0].toString() << "'" << std::endl;
-
-                        if (parameter[1].toBool())
-                            model = new cppflow::model(parameter[0].toString(), cppflow::model::FROZEN_GRAPH);
-                        else
-                            model = new cppflow::model(parameter[0].toString());
-
-                        EScript::Array *spapeArray = parameter[2].to<EScript::Array *>(rt);
-                        shape.clear();
-                        for (int i = 0; i < spapeArray->size(); i++)
+                        if (!PythonRender::init(rt) || !PythonRender::loadModel(parameter[0].toString(), parameter[1].toString(), parameter[2].get(), parameter[3].toString(""), parameter[4].toString("")))
                         {
-                            shape.push_back(spapeArray->at(i).to<int64_t>(rt));
+                            return false;
                         }
-
-                        inputOperation = parameter[3].toString();  // TODO check if exists
-                        outputOperation = parameter[4].toString(); // TODO check if exists
-                                                                   // for (std::string s : model->get_operations())
 
                         return thisEObj;
                     });
@@ -257,7 +185,7 @@ namespace RenderFlow
             for (int i = 0; i < in->size(); i++)
                 inVector.push_back(in->at(i).toFloat());
 
-            return EScript::Array::create(predict(inVector, parameter[1].toBool(true)));
+            return EScript::Array::create(PythonRender::predict(inVector, parameter[1].toBool(true)));
         });
 
         ES_FUNCTION(lib, "uint8ToFloat", 1, 1,
@@ -295,7 +223,7 @@ namespace RenderFlow
             // std::cout << "time getTextureDataAsFloat: " << clock() - start << "ms\n";
 
             // start = clock();
-            std::vector<float> out = predict(in, parameter[3].toBool(true));
+            std::vector<float> out = PythonRender::predict(in, parameter[3].toBool(true));
             // std::cout << "time predict: " << clock() - start << "ms\n";
 
             // start = clock();

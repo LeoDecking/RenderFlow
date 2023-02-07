@@ -5,7 +5,7 @@ import tensorflow as tf
 # import time
 
 print("Hello World, by Python!")
-model = tf.saved_model.load('../extPlugins/RenderFlow/upscaleModel/saved/')
+model = tf.saved_model.load('upscaleModel/saved/')
 print("Model loaded!")
 
 

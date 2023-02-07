@@ -5,7 +5,7 @@ import escript
 cache = False
 
 print("Hello World, by Python!")
-model = tf.saved_model.load('../extPlugins/RenderFlow/model/')
+model = tf.saved_model.load('/model/')
 print("Model loaded!")
 
 lx, lz, lr = None, None, None

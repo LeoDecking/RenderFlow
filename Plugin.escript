@@ -51,7 +51,7 @@ static activate = fn(flow) {
 	}
 	if(!loadedFlow) {
 		if(flow.getModel() && loadedModel != flow.getModel() + flow.getModelInput() + flow.getModelOutput()) {
-			RenderFlow.loadModel(flow.getModel(), flow.getModelFrozenGraph(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
+			RenderFlow.loadModel(__DIR__ + "/PythonTensorflow.py", flow.getModel(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
 			loadedModel = flow.getModel() + flow.getModelInput() + flow.getModelOutput();
 		}
 

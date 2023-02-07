@@ -1,11 +1,11 @@
 var upscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'upscale',
 
-    RenderFlow.Flow.MODEL: '../extPlugins/RenderFlow/upscaleModel/model.pb',
-    RenderFlow.Flow.MODEL_FROZEN_GRAPH: true,
+    RenderFlow.Flow.MODEL: __DIR__ + '/upscaleModel/saved',
+    // RenderFlow.Flow.MODEL_FROZEN_GRAPH: true,
     RenderFlow.Flow.MODEL_SHAPE: [324, 324, 3],
-    RenderFlow.Flow.MODEL_INPUT: 'input:0',
-    RenderFlow.Flow.MODEL_OUTPUT: 'Identity:0',
+    RenderFlow.Flow.MODEL_INPUT: 'serving_default',
+    RenderFlow.Flow.MODEL_OUTPUT: 'out',
 
     RenderFlow.Flow.PRERENDER: true,
     RenderFlow.Flow.PRERENDER_DIM: [324, 324],

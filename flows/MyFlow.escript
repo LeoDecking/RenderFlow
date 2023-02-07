@@ -1,11 +1,11 @@
 var myFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'paderbornMap',
 
-    RenderFlow.Flow.MODEL: '../extPlugins/RenderFlow/model',
-    RenderFlow.Flow.MODEL_FROZEN_GRAPH: false,
+    RenderFlow.Flow.MODEL: __DIR__ + '/model',
+    // RenderFlow.Flow.MODEL_FROZEN_GRAPH: false,
     RenderFlow.Flow.MODEL_SHAPE: [2],
-    RenderFlow.Flow.MODEL_INPUT: 'serving_default_dense_6_input:0',
-    RenderFlow.Flow.MODEL_OUTPUT: 'StatefulPartitionedCall:0',
+    // RenderFlow.Flow.MODEL_INPUT: 'serving_default_dense_6_input:0',
+    // RenderFlow.Flow.MODEL_OUTPUT: 'StatefulPartitionedCall:0',
 
     RenderFlow.Flow.PRERENDER: false,
     
