@@ -46,25 +46,28 @@ plugin.init @(override) := fn() {
 };
 
 static activate = fn(flow) {
-	if(loadedFlow && loadedFlow != flow) {
+	if(loadedFlow)
 		deactivate();
-	}
-	if(!loadedFlow) {
-		if(flow.getModel() && loadedModel != flow.getModel() + flow.getModelInput() + flow.getModelOutput()) {
-			RenderFlow.loadModel(__DIR__ + "/PythonTensorflow.py", flow.getModel(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
-			loadedModel = flow.getModel() + flow.getModelInput() + flow.getModelOutput();
-		}
 
-		loadedFlow = flow;
-
-		PADrend.executeCommand(fn(){PPEffectPlugin.loadAndSetEffect("../extPlugins/RenderFlow/Effect.escript");});
-	}
-	// python is reloaded every time
+	
+	// if(flow.getModel() && loadedModel != flow.getModel() + flow.getModelInput() + flow.getModelOutput()) {
+	if(flow.getModel())
+		RenderFlow.loadModel(__DIR__ + "/PythonTensorflow.py", flow.getModel(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
+		// loadedModel = flow.getModel() + flow.getModelInput() + flow.getModelOutput();
+	// }
+	loadedFlow = flow;
 	if(flow.getPythonPath()) RenderFlow.pythonInit(flow.getPythonPath());
+
+	PADrend.executeCommand(fn(){PPEffectPlugin.loadAndSetEffect("../extPlugins/RenderFlow/Effect.escript");});
 };
 static deactivate = fn() {
 	if(loadedFlow) {
 		PADrend.executeCommand(fn(){PPEffectPlugin.setEffect(false);});
+
+		if(loadedFlow.getPythonPath()) RenderFlow.finalizeModule();
+		if(loadedFlow.getModel()) RenderFlow.unloadModel();
+
+		// loadedModel = void;
 		loadedFlow = void;
 	}
 };

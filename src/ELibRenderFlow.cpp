@@ -163,7 +163,6 @@ namespace RenderFlow
         texture.dataChanged();
     }
 
-
     // Initializes your EScript bindings
     void init(EScript::Namespace *lib)
     {
@@ -175,6 +174,12 @@ namespace RenderFlow
                             return false;
                         }
 
+                        return thisEObj;
+                    });
+
+        ES_FUNCTION(lib, "unloadModel", 0, 0,
+                    {
+                        PythonRender::unloadloadModel();
                         return thisEObj;
                     });
 
@@ -244,6 +249,12 @@ namespace RenderFlow
                         loadedPython = parameter[0].toString();
 
                         return true;
+                    });
+
+        ES_FUNCTION(lib, "finalizeModule", 0, 0,
+                    {
+                        PythonRender::finalizeModule();
+                        return thisEObj;
                     });
 
         // crashes with numpy

@@ -11,3 +11,5 @@ Installation:
 5. copy include/tensorflow.dll to RenderFlow/include and to PADrend/build
 6. configure and build in release mode
 7. enjoy
+
+'export PYTHONFAULTHANDLER=1' for more detailed error messages

@@ -17,5 +17,4 @@ def render(prerender):
     a[300:, :, 0] *= 2
     a[600:, :, 0] *= 2
     a[:, :512, 1] *= 0
-    
     return a

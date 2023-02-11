@@ -1,12 +1,13 @@
 import numpy as np
 import tensorflow as tf
+from pathlib import Path
 # import escript
 
 # import time
 
 print("Hello World, by Python!")
-model = tf.saved_model.load('upscaleModel/saved/')
-print("Model loaded!")
+model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/upscaleModel/saved/')
+print("P: Model loaded!")
 
 
 def render(prerender):

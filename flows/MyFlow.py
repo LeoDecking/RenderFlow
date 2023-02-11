@@ -1,14 +1,26 @@
 import numpy as np
 import tensorflow as tf
+from pathlib import Path
 import escript
 
+
 cache = False
-
-print("Hello World, by Python!")
-model = tf.saved_model.load('/model/')
-print("Model loaded!")
-
+model = None
 lx, lz, lr = None, None, None
+
+
+def init():
+    print("Hello World, by Python!")
+    global model
+    model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/model/')
+    print("p: Model loaded!")
+
+
+def finalize():
+    print("Goodbye, by Python!")
+    global model
+    model = None
+
 
 def render(prerender):
     x, z = escript.eval("""

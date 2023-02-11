@@ -2,9 +2,12 @@ import numpy as np
 import escript
 
 
-print("Hello World, by Python!")
-print(escript.eval("10000+23+42;"))
-print(escript.eval("[1,2,3]"))
+def init():
+    print("Hello World, by Python!")
+
+
+def finalize():
+    print("Goodbye, by Python!")
 
 def render(prerender):
     a = np.flip(prerender)
