@@ -2,6 +2,22 @@
 
 // TODO tensorflow gpu support
 
+This plugin defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
+A <code>Flow</code> defines how the render process should be modified.<br/>
+Therefore a new <code>render()</code> method can be defined in EScript or in Python with access to the pixels by the standard renderer.<br>
+In EScript, a tensorflow saved model can be used via an given interface.<br/>
+If the <code>render()</code> method is defined in Python, arbitrary EScript code can be evaluated.
+
+### Content:
+- Installation
+- RenderFlow.Flow interface
+- EScript functions
+- Python functions
+- Examples
+  - Tensorflow models
+  - Prerendering
+  - Tensorflow + prerendering
+
 ### Installation:
 
 1. Install Python3 (< 3.11, because tensorflow support is missing there)
@@ -11,16 +27,8 @@
 5. Enjoy!😊
 <!-- ('export PYTHONFAULTHANDLER=1' for more detailed error messages) -->
 
----
 
-This plugins defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
-A <code>Flow</code> defines how the render process should be modified.<br/>
-Therefore a new <code>render()</code> method can be defined in EScript or in Python with access to the pixels by the standard renderer.<br>
-In EScript, a tensorflow saved model can be used via an given interface.<br/>
-If the <code>render()</code> method is defined in Python, arbitrary EScript code can be evaluated.
-
-
-### <code>RenderFlow.Flow</code>:
+### <code>RenderFlow.Flow</code> interface:
 ```ts
 void onActivate() // called after initializing python and model
 void onDeactivate() // called after finalizing python and model
