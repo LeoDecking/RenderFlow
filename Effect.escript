@@ -57,7 +57,7 @@ Effect.begin @(override) ::= fn(){
         RenderFlow.directPrerender(renderingContext, preColorTexture, colorTexture, !(flow.getPrerenderDirectCache() === false), flow.getFormat() == 'MONO_COLORMAP');
 
     } else {
-        var data = flow.render(flow.getPrerender() ? preColorTexture.getData(renderingContext) : void);
+        var data = flow.getPrerender() ? flow.render(preColorTexture.getData(renderingContext)) : flow.render();
         RenderFlow.setTextureData(colorTexture, data, flow.getDataFromFloat() == true, flow.getFormat() == 'MONO_COLORMAP');
     }
 

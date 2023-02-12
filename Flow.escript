@@ -7,7 +7,7 @@ T.NAME ::= 'name';
 T.PYTHON_PATH ::= 'pythonPath';
 
 T.MODEL ::= 'model';
-T.MODEL_FROZEN_GRAPH ::= 'modelFrozenGraph';
+// T.MODEL_FROZEN_GRAPH ::= 'modelFrozenGraph';
 T.MODEL_SHAPE ::= 'modelShape';
 T.MODEL_INPUT ::= 'modelInput';
 T.MODEL_OUTPUT ::= 'modelOutput';
@@ -41,12 +41,16 @@ T.FORMAT ::= 'format';
 
 T._constructor ::= fn( Map properties){
 	_properties = properties.clone();
+    if(_properties[T.NAME] == void)
+        _properties[T.NAME] = "flow";
+    if(_properties[T.FORMAT] == void)
+        _properties[T.FORMAT] = "RGB";
 };
 
 T.getName		            ::= fn(){	return this._properties[T.NAME];	};
 T.getPythonPath		            ::= fn(){	return this._properties[T.PYTHON_PATH];	};
 T.getModel		            ::= fn(){	return this._properties[T.MODEL];	};
-T.getModelFrozenGraph		::= fn(){	return this._properties[T.MODEL_FROZEN_GRAPH];	};
+// T.getModelFrozenGraph		::= fn(){	return this._properties[T.MODEL_FROZEN_GRAPH];	};
 T.getModelShape		        ::= fn(){	return this._properties[T.MODEL_SHAPE];	};
 T.getModelInput		        ::= fn(){	return this._properties[T.MODEL_INPUT];	};
 T.getModelOutput		    ::= fn(){	return this._properties[T.MODEL_OUTPUT];	};
@@ -77,6 +81,9 @@ T.render := fn(prerender) {
 
 	return r;
 };
+
+T.onActivate := fn() {};
+T.onDeactivate := fn() {};
 
 
 RenderFlow.Flow := T;

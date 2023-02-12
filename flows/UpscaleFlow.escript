@@ -2,7 +2,6 @@ var upscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'upscale',
 
     RenderFlow.Flow.MODEL: __DIR__ + '/upscaleModel/saved',
-    // RenderFlow.Flow.MODEL_FROZEN_GRAPH: true,
     RenderFlow.Flow.MODEL_SHAPE: [324, 324, 3],
     RenderFlow.Flow.MODEL_INPUT: 'serving_default',
     RenderFlow.Flow.MODEL_OUTPUT: 'out',
@@ -16,8 +15,6 @@ var upscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.DIM: [648, 648],
     RenderFlow.Flow.FORMAT: 'RGB'
 });
-
-
 
 
 RenderFlow.upscaleFlow := upscaleFlow;

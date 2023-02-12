@@ -22,7 +22,7 @@ def finalize():
     model = None
 
 
-def render(prerender):
+def render():
     x, z = escript.eval("""
         var cam = PADrend.getActiveCamera();
         return [cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()];
@@ -31,8 +31,6 @@ def render(prerender):
     global lx, lz, lr
     if cache and x == lx and z == lz:
         return lr
-
-    # print("x: " + str(x) + " z: " + str(z))
 
     r = model(np.array([[x / 10, z / 10]], dtype="float32")).numpy()
     lx, lz, lr = x, z, r

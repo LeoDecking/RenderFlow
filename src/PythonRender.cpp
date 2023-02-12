@@ -170,9 +170,9 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
 
     npy_intp dims[1] = {(npy_intp)prerender.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_INT32, prerender.data());
-    PyObject *args = Py_BuildValue("(O)", in_array);
+    PyObject *args =  Py_BuildValue("(O)", in_array);
 
-    PyObject *result = PyObject_CallObject(pyFunction, args);
+    PyObject *result = PyObject_CallObject(pyFunction, prerender.size() ?args:NULL);
 
     Py_DECREF(args);
     Py_DECREF(in_array);

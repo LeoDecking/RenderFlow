@@ -21,12 +21,13 @@ plugin.init @(override) := fn() {
 	RenderFlow.getFlow := fn() { return loadedFlow; };
 
 	load(__DIR__ + "/Flow.escript");
-	load(__DIR__ + "/flows/MyFlow.escript"); // TODO remove
-	load(__DIR__ + "/flows/UpscaleFlow.escript"); // TODO remove
-	load(__DIR__ + "/flows/PythonFlow.escript"); // TODO remove
-	load(__DIR__ + "/flows/PythonMyFlow.escript"); // TODO remove
-	load(__DIR__ + "/flows/PythonPrerenderFlow.escript"); // TODO remove
-	load(__DIR__ + "/flows/PythonUpscaleFlow.escript"); // TODO remove
+	load(__DIR__ + "/flows/SimpleFlow.escript");
+	load(__DIR__ + "/flows/MyFlow.escript");
+	load(__DIR__ + "/flows/UpscaleFlow.escript");
+	load(__DIR__ + "/flows/PythonSimpleFlow.escript");
+	load(__DIR__ + "/flows/PythonMyFlow.escript");
+	load(__DIR__ + "/flows/PythonPrerenderFlow.escript");
+	load(__DIR__ + "/flows/PythonUpscaleFlow.escript");
 
 	 // Create an instance of the LibraryLoader.
     var loader = new (Std.module("LibUtilExt/LibraryLoader"));
@@ -59,6 +60,8 @@ static activate = fn(flow) {
 	if(flow.getPythonPath()) RenderFlow.pythonInit(flow.getPythonPath());
 
 	PADrend.executeCommand(fn(){PPEffectPlugin.loadAndSetEffect("../extPlugins/RenderFlow/Effect.escript");});
+
+	flow.onActivate();
 };
 static deactivate = fn() {
 	if(loadedFlow) {
@@ -68,6 +71,7 @@ static deactivate = fn() {
 		if(loadedFlow.getModel()) RenderFlow.unloadModel();
 
 		// loadedModel = void;
+		loadedFlow.onDeactivate();
 		loadedFlow = void;
 	}
 };

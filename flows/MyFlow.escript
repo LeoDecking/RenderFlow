@@ -1,11 +1,8 @@
 var myFlow = new RenderFlow.Flow({
-    RenderFlow.Flow.NAME: 'paderbornMap',
+    RenderFlow.Flow.NAME: 'myFlow',
 
     RenderFlow.Flow.MODEL: __DIR__ + '/model',
-    // RenderFlow.Flow.MODEL_FROZEN_GRAPH: false,
     RenderFlow.Flow.MODEL_SHAPE: [2],
-    // RenderFlow.Flow.MODEL_INPUT: 'serving_default_dense_6_input:0',
-    // RenderFlow.Flow.MODEL_OUTPUT: 'StatefulPartitionedCall:0',
 
     RenderFlow.Flow.PRERENDER: false,
     
@@ -16,16 +13,17 @@ var myFlow = new RenderFlow.Flow({
 
 static cache = false;
 
-myFlow.render @(override) := fn(prerender) {
-    var cam = PADrend.getActiveCamera();
-    // // var angles = RenderFlow.getCameraAngles(cam);
+myFlow.onActivate @(override) := fn() {
+    outln("myFlow activated");
+};
+myFlow.onDeactivate @(override) := fn() {
+    outln("myFlow deactivated");
+};
 
-    // // std::cout << x.getX() << " " << x.getY() << " " << x.getZ() << std::endl;
-    // // std::cout << y.getX() << " " << y.getY() << " " << y.getZ() << std::endl;
-    // // out(cam.getWorldPosition().getX() + ", " + cam.getWorldPosition().getY() + ", " + cam.getWorldPosition().getZ() + "; " + angleH + "°, " + angleV + "°");
+myFlow.render @(override) := fn() {
+    var cam = PADrend.getActiveCamera();
 
     var input = [cam.getWorldPosition().getX() / 10, cam.getWorldPosition().getZ() / 10];
-    // out(input[0], ", ", input[1],"\n");
     var output = RenderFlow.predict(input, cache);
     return output;
 };

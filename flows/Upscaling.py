@@ -1,14 +1,14 @@
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-# import escript
 
-# import time
+def init():
+    global model
+    model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/upscaleModel/saved/')
 
-print("Hello World, by Python!")
-model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/upscaleModel/saved/')
-print("P: Model loaded!")
-
+def finalize():
+    global model
+    model = None
 
 def render(prerender):
     a = prerender.reshape(1, 324, 324, 3).astype("float32") / 256
