@@ -187,7 +187,8 @@ This leads to the following output:<br>
 ![](tutorial/pythonSimpleFlow.jpg)
 
 ### Tensorflow models:
-The following flow renders (kind of) a map dependend on the camera position:
+The following flow renders (kind of) a map dependend on the camera position.<br>
+You need to download and extract [model.zip](https://schoolyourself.de/downloads/model.zip) to `/flows/model/`.
 ```ts
 var myFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'myFlow',
