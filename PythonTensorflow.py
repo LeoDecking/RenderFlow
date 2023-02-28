@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 def unload():
-    print("unload module, by Python")
+    # print("unload model, by Python")
     global model, shape, input_name, output_name
     model=None
     shape=None
@@ -23,8 +23,7 @@ def loadModel(path, s, i, o):
     print("p: model loaded")
 
 
-
-def predict(i):
+def predict(i):    
     a = i.reshape(shape).astype("float32")
     tn = tf.convert_to_tensor(a)
 

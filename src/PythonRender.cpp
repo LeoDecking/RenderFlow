@@ -11,13 +11,13 @@
 #include <string>
 #include <filesystem>
 #include <time.h>
+#include "PythonModule.h"
+
 #include "PythonRender.h"
 
-PyObject *pyTensorflowModule;
+PythonModule *pyTensorflowModule;
+PythonModule *pyModule;
 
-// TODO unload
-
-PyObject *pyModule;
 EScript::Runtime *runtime;
 
 static PyObject *eval(PyObject *self, PyObject *args)
@@ -37,73 +37,15 @@ static PyObject *eval(PyObject *self, PyObject *args)
         // TODO error handling
         return NULL;
     }
-    return PythonRender::escriptToPython(r.second.detach()); // detachAndDecrease?
+    return PythonModule::escriptToPython(r.second.detach()); // detachAndDecrease?
 }
 
 static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escript code and return the result if primary types"}, {NULL, NULL, 0, NULL}};
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 
-PyObject *PythonRender::escriptToPython(EScript::Object *obj, bool hashable /* = false */)
+void PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 {
-    if (dynamic_cast<EScript::Void *>(obj) || (obj == nullptr))
-    {
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
-    else if (EScript::Object *number = dynamic_cast<EScript::Number *>(obj))
-    {
-        return PyFloat_FromDouble(number->toDouble());
-    }
-    else if (EScript::Bool *b = dynamic_cast<EScript::Bool *>(obj))
-    {
-        if (b->toBool())
-        {
-            Py_INCREF(Py_True);
-            return Py_True;
-        }
-        else
-        {
-            Py_INCREF(Py_False);
-            return Py_False;
-        }
-    }
-    else if (hashable)
-    {
-        return PyUnicode_FromString(obj->toString().c_str());
-    }
-    else if (EScript::Array *a = dynamic_cast<EScript::Array *>(obj))
-    {
-        EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(a->getIterator());
-        PyObject *list = PyList_New(a->size());
-        for (size_t i = 0; i < a->size(); i++)
-            PyList_SET_ITEM(list, i, escriptToPython(a->at(i).get()));
-
-        return list;
-    }
-    else if (EScript::Map *m = dynamic_cast<EScript::Map *>(obj))
-    {
-        PyObject *dict = PyDict_New();
-        EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(m->getIterator());
-
-        while ((!itRef.isNull()) && (!itRef->end()))
-        {
-            EScript::ObjRef keyRef = itRef->key();
-            EScript::ObjRef valueRef = itRef->value();
-
-            PyDict_SetItem(dict, escriptToPython(keyRef.get(), true), escriptToPython(valueRef.get()));
-
-            itRef->next();
-        }
-        return dict;
-    }
-
-    return PyUnicode_FromString(obj->toString().c_str());
-}
-
-bool PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
-{
-    std::cout << "init python: " << pthread_self() << std::endl;
     if (!runtime)
     {
         runtime = &rt;
@@ -118,42 +60,28 @@ bool PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 
         Py_InitializeFromConfig(&config); // TODO error checking
 
-        import_array();
+        if (_import_array() < 0)
+        {
+            PyErr_Print();
+            std::cerr << "numpy.core.multiarray failed to import";
+        }
+        PyRun_SimpleString("import importlib.util; import sys; import gc"); // TODO move up?
     }
-    PyRun_SimpleString("import importlib.util; import sys; import gc"); // TODO move up?
 
     if (path.size())
-        return loadModule(path);
-    else
-        return true;
-}
-
-bool PythonRender::loadModule(std::string path)
-{
-    std::cout << "load module: " << path << std::endl;
-
-    std::replace(path.begin(), path.end(), '\'', ' ');
-    std::string name = path + "";
-    std::replace(name.begin(), name.end(), '.', ' ');
-
-    PyRun_SimpleString(("if '" + name + "' in sys.modules: module = sys.modules['" + name + "']").c_str());
-    PyRun_SimpleString(("if '" + name + "' not in sys.modules: spec = importlib.util.spec_from_file_location('" + name + "', '" + path + "'); module = importlib.util.module_from_spec(spec); sys.modules['" + name + "'] = module;spec.loader.exec_module(module)").c_str());
-    PyRun_SimpleString("if hasattr(module, 'init'): module.init()");
-
-
-    if (pyModule)
-        Py_DECREF(pyModule);
-
-    PyObject *m = PyImport_AddModule("__main__");
-    pyModule = PyObject_GetAttrString(m, "module");
-
-    return pyModule != NULL;
+    {
+        pyModule = new PythonModule(path);
+        pyModule->execute("init", EScript::Array::create(), true);
+    }
 }
 
 void PythonRender::finalizeModule()
 {
-    if (runtime)
-        PyRun_SimpleString("if module != None and hasattr(module, 'finalize'): module.finalize(); gc.collect()");
+    if (pyModule)
+    {
+        pyModule->execute("finalize", EScript::Array::create(), true);
+        PyRun_SimpleString("gc.collect()");
+    }
 }
 
 // TODO NPY_FLOAT64 only when float?
@@ -161,22 +89,14 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
 {
     // time_t start = clock();
 
-    PyObject *pyFunction = PyObject_GetAttrString(pyModule, "render");
-    if (!pyFunction || !PyCallable_Check(pyFunction))
-    {
-        std::cerr << "python render function not found." << std::endl;
-        return {};
-    }
-
     npy_intp dims[1] = {(npy_intp)prerender.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_INT32, prerender.data());
-    PyObject *args =  Py_BuildValue("(O)", in_array);
+    PyObject *args = Py_BuildValue("(O)", in_array);
 
-    PyObject *result = PyObject_CallObject(pyFunction, prerender.size() ?args:NULL);
+    PyObject *result = pyModule->execute("render", prerender.size() ? args : NULL);
 
     Py_DECREF(args);
     Py_DECREF(in_array);
-    Py_DECREF(pyFunction);
 
     if (!result)
     {
@@ -214,30 +134,18 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
     return vector;
 }
 
-bool PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScript::Object *shape, std::string input_name, std::string output_name)
+void PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScript::Object *shape, std::string input_name, std::string output_name)
 {
     std::cout << "load model: " << modelPath << std::endl;
     if (!pyTensorflowModule)
     {
-        std::replace(pythonPath.begin(), pythonPath.end(), '\'', ' ');
-        std::replace(modelPath.begin(), modelPath.end(), '\'', ' ');
-        PyRun_SimpleString(("tSpec = importlib.util.spec_from_file_location('tensorflowModule', '" + pythonPath + "'); tMmodule = importlib.util.module_from_spec(tSpec);sys.modules['tensorflowModule'] = tMmodule;tSpec.loader.exec_module(tMmodule)").c_str());
+        pyTensorflowModule = new PythonModule(pythonPath);
 
         std::cout << "python loaded" << std::endl;
-
-        PyObject *m = PyImport_AddModule("__main__");
-        pyTensorflowModule = PyObject_GetAttrString(m, "tMmodule");
-    }
-
-    PyObject *pyFunction = PyObject_GetAttrString(pyTensorflowModule, "loadModel");
-    if (!pyFunction || !PyCallable_Check(pyFunction))
-    {
-        std::cerr << "python loadModel function not found." << std::endl;
-        return {};
     }
 
     PyObject *pathObj = PyUnicode_FromString(modelPath.c_str());
-    PyObject *shapeObj = escriptToPython(shape);
+    PyObject *shapeObj = PythonModule::escriptToPython(shape);
     PyObject *inObj = PyUnicode_FromString(input_name.c_str());
     PyObject *outObj = PyUnicode_FromString(output_name.c_str());
 
@@ -248,7 +156,7 @@ bool PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScr
     PyTuple_SetItem(args, 3, outObj);
 
     std::cout << "load model:" << std::endl;
-    PyObject *result = PyObject_CallObject(pyFunction, args);
+    PyObject *result = pyTensorflowModule->execute("loadModel", args);
     std::cout << "model loaded" << std::endl;
 
     // Py_DECREF(pathObj);
@@ -256,25 +164,26 @@ bool PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScr
     // Py_DECREF(inObj);
     // Py_DECREF(outObj);
     Py_DECREF(args);
-    Py_DECREF(pyFunction);
 
     if (!result)
     {
         std::cerr << "error:" << std::endl;
         PyErr_Print();
-        std::cerr << "python load module call failed." << std::endl;
-        return {};
+        std::cerr << "python load model call failed." << std::endl;
     }
-
-    Py_DECREF(result);
-
-    return pyTensorflowModule != NULL;
+    else
+    {
+        Py_DECREF(result);
+    }
 }
 
 void PythonRender::unloadloadModel()
 {
-    if (runtime)
-        PyRun_SimpleString("if tMmodule != None: tMmodule.unload(); gc.collect()");
+    if (pyTensorflowModule)
+    {
+        pyTensorflowModule->execute("unload", EScript::Array::create(), true);
+        PyRun_SimpleString("gc.collect()");
+    }
 }
 std::vector<float> lastInput;
 std::vector<float> lastOutput;
@@ -296,21 +205,13 @@ std::vector<float> PythonRender::predict(std::vector<float> &input, bool cache)
 
     // time_t start = clock();
 
-    PyObject *pyFunction = PyObject_GetAttrString(pyTensorflowModule, "predict");
-    if (!pyFunction || !PyCallable_Check(pyFunction))
-    {
-        std::cerr << "python predict function not found." << std::endl;
-        return {};
-    }
-
     npy_intp dims[1] = {(long long int)input.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT32, input.data());
     PyObject *args = Py_BuildValue("(O)", in_array);
 
-    PyObject *result = PyObject_CallObject(pyFunction, args);
+    PyObject *result = pyTensorflowModule->execute("predict", args);
     Py_DECREF(args);
     Py_DECREF(in_array);
-    Py_DECREF(pyFunction);
 
     if (!result)
     {

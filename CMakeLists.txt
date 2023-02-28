@@ -19,6 +19,8 @@ add_library(${PROJECT_NAME} SHARED
     src/Main.cpp
     src/ELibRenderFlow.cpp
     # add your own .cpp files here
+	src/PythonModule.cpp
+	src/E_PythonModule.cpp
 	src/PythonRender.cpp
 )
 

@@ -1,6 +1,6 @@
 var pythonPrerenderFlow = new RenderFlow.Flow({
     RenderFlow.Flow.NAME: 'python',
-    RenderFlow.Flow.PYTHON_PATH: __DIR__+'/PrerenderTest.py',
+    RenderFlow.Flow.PYTHON_PATH: __DIR__+'/Prerender.py',
 
     RenderFlow.Flow.PRERENDER: true,
     RenderFlow.Flow.PRERENDER_DIM: [648, 648],

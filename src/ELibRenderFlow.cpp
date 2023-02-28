@@ -27,6 +27,8 @@
 #include <time.h>
 #include <algorithm>
 
+#include "E_PythonModule.h"
+
 #include "PythonRender.h"
 
 namespace RenderFlow
@@ -166,13 +168,17 @@ namespace RenderFlow
     // Initializes your EScript bindings
     void init(EScript::Namespace *lib)
     {
+        E_PythonModule::init(*lib);
+
         // pythonPath, modelPath, shape, inputOperation, outputOperation
         ES_FUNCTION(lib, "loadModel", 5, 5,
                     {
-                        if (!PythonRender::init(rt) || !PythonRender::loadModel(parameter[0].toString(), parameter[1].toString(), parameter[2].get(), parameter[3].toString(""), parameter[4].toString("")))
-                        {
-                            return false;
-                        }
+                        // if (!PythonRender::init(rt) || !PythonRender::loadModel(parameter[0].toString(), parameter[1].toString(), parameter[2].get(), parameter[3].toString(""), parameter[4].toString("")))
+                        // {
+                        //     return false;
+                        // }
+                        PythonRender::init(rt);
+                        PythonRender::loadModel(parameter[0].toString(), parameter[1].toString(), parameter[2].get(), parameter[3].toString(""), parameter[4].toString(""));
 
                         return thisEObj;
                     });
@@ -241,11 +247,12 @@ namespace RenderFlow
         // module
         ES_FUNCTION(lib, "pythonInit", 1, 1,
                     {
-                        if (!PythonRender::init(rt, parameter[0].toString()))
-                        {
-                            return false;
-                            loadedPython = "";
-                        }
+                        // if (!PythonRender::init(rt, parameter[0].toString()))
+                        // {
+                        //     return false;
+                        //     loadedPython = "";
+                        // }
+                        PythonRender::init(rt, parameter[0].toString());
                         loadedPython = parameter[0].toString();
 
                         return true;

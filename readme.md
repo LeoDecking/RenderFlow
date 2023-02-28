@@ -10,7 +10,8 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 
 ### Content:
 - Installation
-- RenderFlow.Flow interface
+- RenderFlow.PythonModule
+- RenderFlow.Flow
 - EScript functions
 - Python functions
 - Examples
@@ -27,14 +28,54 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 5. Enjoy!😊
 <!-- ('export PYTHONFAULTHANDLER=1' for more detailed error messages) -->
 
+### `RenderFlow.PythonModule`:
+```ts
+// load the module at path
+// reuse: if already loaded before, use that same instance
+new PythonModule(String path, Bool reuse = True)
 
-### <code>RenderFlow.Flow</code> interface:
+// execute the given function and pass the arguments
+Object execute(String functionName, ...Object args)
+```
+
+#### Example:
+```python
+# Test.py
+print("hello from Python!")
+
+name = "Alice"
+
+def test(a, b, c):
+    global name
+    print("hey " + str(a) + " from " + name + ", " + str(b * c))
+    name = a
+```
+```ts
+var test = new RenderFlow.PythonModule("Test.py");
+// -> "hello from Python!"
+test.execute("test", "Leo", 6, 7);
+// -> hey Leo from Alice, 42.0
+
+// reuse loaded module instance
+var test2 = new RenderFlow.PythonModule("Test.py", true);
+test2.execute("test", "Bob", 2, 3);
+// -> hey Bob from Leo, 6.0
+
+// new module instance
+var test3 = new RenderFlow.PythonModule("Test.py", false);
+// -> hello from Python!
+test3.execute("test", "Eve", 4, 2);
+// -> hey Eve from Alice, 8.0
+```
+
+### <code>RenderFlow.Flow</code>:
 ```ts
 void onActivate() // called after initializing python and model
 void onDeactivate() // called after finalizing python and model
-Number[] render(Number[] prerender = [])
+
 // called every frame, prerender optionally given
 // not called if PRERENDER_DIRECT or PYTHON_PATH is given
+Number[] render(Number[] prerender = [])
 
 NAME: String
 DIM: [Number width, Number height] // dimensions

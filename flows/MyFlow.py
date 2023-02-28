@@ -3,11 +3,9 @@ import tensorflow as tf
 from pathlib import Path
 import escript
 
-
 cache = False
 model = None
 lx, lz, lr = None, None, None
-
 
 def init():
     print("Hello World, by Python!")
