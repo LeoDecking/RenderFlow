@@ -1,5 +1,7 @@
 import numpy as np
 
+def init():
+    print("init Simple")
 
 def render():
     # a = np.ones([100* 100* 3])

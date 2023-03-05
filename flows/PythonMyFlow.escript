@@ -8,4 +8,5 @@ var pythonMyFlow = new RenderFlow.Flow({
     RenderFlow.Flow.DIM: [64, 64],
     RenderFlow.Flow.FORMAT: 'MONO_COLORMAP'
 });
-RenderFlow.pythonMyFlow := pythonMyFlow;
+// RenderFlow.pythonMyFlow := pythonMyFlow;
+RenderFlow.register(pythonMyFlow);

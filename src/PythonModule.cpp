@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstdlib>
 
+#include <thread>
+
 #include "PythonRender.h"
 
 #include "PythonModule.h"
@@ -21,14 +23,31 @@ PythonModule::PythonModule(std::string path, bool reuse /* = true */)
     if (!reuse)
         name += std::to_string(std::rand());
 
-    PyRun_SimpleString(("if '" + name + "' in sys.modules: module = sys.modules['" + name + "']").c_str());
-    PyRun_SimpleString(("if '" + name + "' not in sys.modules: spec = importlib.util.spec_from_file_location('" + name + "', '" + path + "'); module = importlib.util.module_from_spec(spec); sys.modules['" + name + "'] = module;spec.loader.exec_module(module)").c_str());
+    std::cout << "name: " << name << std::endl;
+
+    std::cout << "thread: "<<std::this_thread::get_id()<<std::endl;
+
+    // PyRun_SimpleString("c")
+
+    PyRun_SimpleString(("c=0;print('" + name + "' in sys.modules);c=1;").c_str());
+    double c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
+    std::cout << "counter: " << c << std::endl;
+    PyRun_SimpleString(("if '" + name + "' in sys.modules: c=3;module = sys.modules['" + name + "'];c=4;print(module);c=5").c_str());
+    c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
+    std::cout << "counter: " << c << std::endl;
+    PyRun_SimpleString(("if '" + name + "' not in sys.modules:c=6; spec = importlib.util.spec_from_file_location('" + name + "', '" + path + "');c=7; module = importlib.util.module_from_spec(spec); c=8;sys.modules['" + name + "'] = module;c=9;spec.loader.exec_module(module);c=10;print(module)").c_str());
+
+    PyRun_SimpleString("module.init()");
 
     // if (pyModule)
     //     Py_DECREF(pyModule);
 
-    PyObject *m = PyImport_AddModule("__main__");
-    pyModule = PyObject_GetAttrString(m, "module");
+    c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
+    std::cout << "counter: " << c << std::endl;
+    pyModule = PyObject_GetAttrString(PythonRender::mainModule, "module");
+    // execute("init", EScript::Array::create(), true);
+
+    // pyModule = PyDict_GetItemString(PythonRender::sysModules, name.c_str());
 }
 
 // TODO numpy

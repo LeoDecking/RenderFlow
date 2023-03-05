@@ -12,4 +12,5 @@ var pythonUpscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.pythonUpscaleFlow := pythonUpscaleFlow;
+// RenderFlow.pythonUpscaleFlow := pythonUpscaleFlow;
+RenderFlow.register(pythonUpscaleFlow);

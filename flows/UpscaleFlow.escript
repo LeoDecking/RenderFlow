@@ -17,4 +17,5 @@ var upscaleFlow = new RenderFlow.Flow({
 });
 
 
-RenderFlow.upscaleFlow := upscaleFlow;
+// RenderFlow.upscaleFlow := upscaleFlow;
+RenderFlow.register(upscaleFlow);

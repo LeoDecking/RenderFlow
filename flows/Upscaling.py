@@ -3,6 +3,7 @@ import tensorflow as tf
 from pathlib import Path
 
 def init():
+    print("init Upscaling")
     global model
     model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/upscaleModel/saved/')
 
@@ -16,5 +17,7 @@ def render(prerender):
     tn = tf.convert_to_tensor(a)
     r = model.signatures["serving_default"](tn)["out"]
     r = np.clip(r.numpy()*256, 0, 255)
+
+    print(r.shape)
 
     return r

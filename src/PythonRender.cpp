@@ -20,6 +20,8 @@ PythonModule *pyModule;
 
 EScript::Runtime *runtime;
 
+PyObject *PythonRender::mainModule;
+
 static PyObject *eval(PyObject *self, PyObject *args)
 {
     const char *s;
@@ -44,6 +46,7 @@ static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escri
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 
+// TODO move to PythonModule
 void PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 {
     if (!runtime)
@@ -66,6 +69,7 @@ void PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
             std::cerr << "numpy.core.multiarray failed to import";
         }
         PyRun_SimpleString("import importlib.util; import sys; import gc"); // TODO move up?
+        PythonRender::mainModule = PyImport_AddModule("__main__");
     }
 
     if (path.size())

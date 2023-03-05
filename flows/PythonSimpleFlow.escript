@@ -6,4 +6,5 @@ var pythonSimpleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.pythonSimpleFlow := pythonSimpleFlow;
+// RenderFlow.pythonSimpleFlow := pythonSimpleFlow;
+RenderFlow.register(pythonSimpleFlow);

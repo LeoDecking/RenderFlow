@@ -12,9 +12,12 @@ static plugin = new Plugin({
 static loadedFlow = void;
 static loadedModel = void;
 
+static flows = [];
+
 // This function will be called only if this plugin is marked as active
 plugin.init @(override) := fn() {
 	declareNamespace($RenderFlow); // Define the namespace RenderFlow
+	RenderFlow.register := register;
 	RenderFlow.activate := activate;
 	RenderFlow.deactivate := deactivate;
 	RenderFlow.getCameraAngles := getCameraAngles;
@@ -28,6 +31,8 @@ plugin.init @(override) := fn() {
 	load(__DIR__ + "/flows/PythonMyFlow.escript");
 	load(__DIR__ + "/flows/PythonPrerenderFlow.escript");
 	load(__DIR__ + "/flows/PythonUpscaleFlow.escript");
+
+	module.on('PADrend/gui', initGUI);
 
 	 // Create an instance of the LibraryLoader.
     var loader = new (Std.module("LibUtilExt/LibraryLoader"));
@@ -44,6 +49,47 @@ plugin.init @(override) := fn() {
     
 
 	return true; // true means that we have initialized it without any errors
+};
+
+static initGUI = fn(gui) {
+	outln("RenderFlow: Init GUI...");
+		
+	// Adds the menu entry 'ExampleProject' to the plugins menu.
+	gui.register('PADrend_PluginsMenu.RenderFlow',[
+		{
+			GUI.TYPE : GUI.TYPE_MENU,
+			GUI.LABEL : "RenderFlow",
+			GUI.MENU : 'PADrend_RenderFlowMenu',
+			GUI.MENU_WIDTH : 150
+		}
+	]);
+
+	gui.register('PADrend_RenderFlowMenu.main',fn(){
+		var entries = [];
+		entries += "*Flows*";
+
+		foreach(flows as var flow) {
+			entries += {
+				GUI.TYPE : GUI.TYPE_BOOL,
+				GUI.LABEL : flow.getName(),
+				GUI.DATA_VALUE : loadedFlow == flow,
+				GUI.ON_DATA_CHANGED : [flow]=>fn(flow,value){
+					// systemConfig.setValue('PADrend.plugins.'+name,value);
+					// PADrend.message("Flow '"+name+"' ("+value+")");
+					gui.closeAllMenus();
+					if(loadedFlow == flow) deactivate();
+					else activate(flow);
+				},
+				GUI.TOOLTIP : (flow.getPythonPath() ? "Python: " + flow.getPythonPath() : "") + (flow.getPythonPath() && flow.getModel() ? "\n":"") + (flow.getModel() ? "Model: " + flow.getModel() : "")
+			};
+		}
+		
+		return entries;
+	});
+};
+
+static register = fn(flow) {
+	flows.append([flow]);
 };
 
 static activate = fn(flow) {

@@ -21,4 +21,5 @@ simpleFlow.render @(override) := fn() {
     return output;
 };
 
-RenderFlow.simpleFlow := simpleFlow;
+// RenderFlow.simpleFlow := simpleFlow;
+RenderFlow.register(simpleFlow);

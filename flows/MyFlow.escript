@@ -28,4 +28,5 @@ myFlow.render @(override) := fn() {
     return output;
 };
 
-RenderFlow.myFlow := myFlow;
+// RenderFlow.myFlow := myFlow;
+RenderFlow.register(myFlow);

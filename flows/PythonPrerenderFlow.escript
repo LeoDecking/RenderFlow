@@ -1,5 +1,5 @@
 var pythonPrerenderFlow = new RenderFlow.Flow({
-    RenderFlow.Flow.NAME: 'python',
+    RenderFlow.Flow.NAME: 'pythonPrerender',
     RenderFlow.Flow.PYTHON_PATH: __DIR__+'/Prerender.py',
 
     RenderFlow.Flow.PRERENDER: true,
@@ -10,4 +10,5 @@ var pythonPrerenderFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.pythonPrerenderFlow := pythonPrerenderFlow;
+// RenderFlow.pythonPrerenderFlow := pythonPrerenderFlow;
+RenderFlow.register(pythonPrerenderFlow);

@@ -8,6 +8,8 @@
 class PythonRender
 {
 public:
+    static PyObject *mainModule;
+
     static void init(EScript::Runtime &runtime, std::string path = "");
     static void loadModule(std::string path);
     static void finalizeModule();
