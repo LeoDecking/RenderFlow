@@ -12,6 +12,8 @@
 
 #include "PythonModule.h"
 
+// TODO int float conversions
+
 PythonModule::PythonModule(std::string path, bool reuse /* = true */)
 {
     std::cout << "load module: " << path << std::endl;
@@ -25,7 +27,7 @@ PythonModule::PythonModule(std::string path, bool reuse /* = true */)
 
     std::cout << "name: " << name << std::endl;
 
-    std::cout << "thread: "<<std::this_thread::get_id()<<std::endl;
+    std::cout << "thread: " << std::this_thread::get_id() << std::endl;
 
     // PyRun_SimpleString("c")
 
@@ -55,9 +57,8 @@ PythonModule::PythonModule(std::string path, bool reuse /* = true */)
 
 EScript::Object *PythonModule::pythonToEScript(PyObject *obj, bool hashable)
 {
-    if (obj == Py_None)
+    if (obj == Py_None || obj == NULL)
     {
-        Py_INCREF(Py_None);
         return EScript::create(nullptr);
     }
     else if (PyLong_Check(obj))
@@ -131,7 +132,7 @@ PyObject *PythonModule::escriptToPython(EScript::Object *obj, bool hashable /* =
     }
     else if (EScript::Array *a = dynamic_cast<EScript::Array *>(obj))
     {
-        EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(a->getIterator());
+        // EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(a->getIterator());
         PyObject *list = PyList_New(a->size());
         for (size_t i = 0; i < a->size(); i++)
             PyList_SET_ITEM(list, i, escriptToPython(a->at(i).get()));
@@ -160,7 +161,8 @@ PyObject *PythonModule::escriptToPython(EScript::Object *obj, bool hashable /* =
 
 PyObject *PythonModule::execute(std::string name, PyObject *args, bool optional /* = false */)
 {
-    PyObject *pyFunction = PyObject_GetAttrString(pyModule, name.c_str());
+
+    PyObject *pyFunction = PyObject_HasAttrString(pyModule, name.c_str()) ? PyObject_GetAttrString(pyModule, name.c_str()) : NULL;
     if (!pyFunction || !PyCallable_Check(pyFunction))
     {
         if (optional)

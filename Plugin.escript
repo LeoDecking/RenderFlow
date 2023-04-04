@@ -23,6 +23,8 @@ plugin.init @(override) := fn() {
 	RenderFlow.getCameraAngles := getCameraAngles;
 	RenderFlow.getFlow := fn() { return loadedFlow; };
 
+	load(__DIR__ + "/Screenshot.escript");
+
 	load(__DIR__ + "/Flow.escript");
 	load(__DIR__ + "/flows/SimpleFlow.escript");
 	load(__DIR__ + "/flows/MyFlow.escript");
@@ -31,6 +33,7 @@ plugin.init @(override) := fn() {
 	load(__DIR__ + "/flows/PythonMyFlow.escript");
 	load(__DIR__ + "/flows/PythonPrerenderFlow.escript");
 	load(__DIR__ + "/flows/PythonUpscaleFlow.escript");
+	load(__DIR__ + "/flows/Nerf.escript");
 
 	module.on('PADrend/gui', initGUI);
 
@@ -122,7 +125,7 @@ static deactivate = fn() {
 	}
 };
 
-static getCameraAngles = fn(cam) {
+static getCameraAngles = fn(cam=PADrend.getActiveCamera()) {
     var x = cam.getWorldTransformationMatrix().transformDirection([1, 0, 0]);
     var angleH = x.getX().acos().radToDeg();
     if (x.getX() == 1)

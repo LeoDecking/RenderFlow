@@ -3,6 +3,8 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "numpy/arrayobject.h"
 
+#include <E_Rendering/E_RenderingContext.h>
+#include <E_Rendering/Texture/E_Texture.h>
 #include <EScript/Utils/StringData.h>
 #include <EScript/Utils/ObjArray.h>
 #include <EScript/Utils/RuntimeHelper.h>
@@ -11,6 +13,7 @@
 #include <string>
 #include <filesystem>
 #include <time.h>
+#include "ELibRenderFlow.h"
 #include "PythonModule.h"
 
 #include "PythonRender.h"
@@ -42,7 +45,29 @@ static PyObject *eval(PyObject *self, PyObject *args)
     return PythonModule::escriptToPython(r.second.detach()); // detachAndDecrease?
 }
 
-static PyMethodDef Methods[] = {{"eval", eval, METH_VARARGS, "evaluate the escript code and return the result if primary types"}, {NULL, NULL, 0, NULL}};
+static std::vector<int> pixels;
+static PyObject *screenshot(PyObject *self, PyObject *args)
+{
+    int x, y;
+    if (!PyArg_ParseTuple(args, "ii", &x, &y))
+        return NULL;
+
+    auto r = EScript::eval(*runtime, EScript::StringData("RenderFlow._screenshot(" + std::to_string(x) + ", " + std::to_string(y) + ");"));
+    const EScript::Array *a = (EScript::Array *)r.second.detach();
+
+    Rendering::RenderingContext *c = dynamic_cast<E_Rendering::E_RenderingContext *>(a->at(0).get())->ref();
+    Rendering::Texture *t = dynamic_cast<E_Rendering::E_Texture *>(a->at(1).get())->ref().get();
+
+    pixels = RenderFlow::getTextureData(*c, *t);
+
+    npy_intp dims[1] = {(npy_intp)pixels.size()};
+    return PyArray_SimpleNewFromData(1, dims, NPY_INT32, pixels.data());
+}
+
+static PyMethodDef Methods[] = {
+    {"eval", eval, METH_VARARGS, "evaluate the escript code and return the result if primary types"},
+    {"screenshot", screenshot, METH_VARARGS, "return screenshot of given dimensions as numpy array"},
+    {NULL, NULL, 0, NULL}};
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 

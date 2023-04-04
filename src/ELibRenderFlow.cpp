@@ -209,6 +209,7 @@ namespace RenderFlow
                         return floatToUint8(parameter[0].to<EScript::Array *>(rt));
                     });
 
+
         // renderingContext, texture, asFloat=false
         ES_FUNCTION(lib, "getTextureData", 2, 3, {
             return parameter[2].toBool(false) ? EScript::Array::create(getTextureDataAsFloat(parameter[0].to<Rendering::RenderingContext &>(rt), parameter[1].to<Rendering::Texture &>(rt)))
