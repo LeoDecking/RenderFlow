@@ -14,8 +14,17 @@ import escript
 res = 100
 
 offset = [0, 0, 0]
-radius = 1
-speed = 1
+radius = 4
+theta = 0
+phi = 0
+
+oldH=None
+oldV=None
+oldR=None
+oldImg=None
+
+
+speed = 0
 
 i = 0
 
@@ -23,30 +32,70 @@ i = 0
 def init():
     print("Hey, I'm Python!")
 
-
-# oldH = 0
-# oldV = 0
-
-# def loadModel(path):
-#     loadModel(path)
+def setSpeed(s):
+    global speed
+    speed = s
 
 
-def screenshot(h, v):
-    x = radius * math.sin(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
-    y = radius * math.sin(2*math.pi*v/360)
-    z = radius * math.cos(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
+trans_t = lambda t : tf.convert_to_tensor([
+    [1,0,0,0],
+    [0,1,0,0],
+    [0,0,1,t],
+    [0,0,0,1],
+], dtype=tf.float32)
+
+rot_phi = lambda phi : tf.convert_to_tensor([
+    [1,0,0,0],
+    [0,tf.cos(phi),-tf.sin(phi),0],
+    [0,tf.sin(phi), tf.cos(phi),0],
+    [0,0,0,1],
+], dtype=tf.float32)
+
+rot_theta = lambda th : tf.convert_to_tensor([
+    [tf.cos(th),0,-tf.sin(th),0],
+    [0,1,0,0],
+    [tf.sin(th),0, tf.cos(th),0],
+    [0,0,0,1],
+], dtype=tf.float32)
+
+
+def pose_spherical(theta, phi, radius):
+    c2w = trans_t(radius)
+    c2w = rot_phi(phi/180.*np.pi) @ c2w
+    c2w = rot_theta(theta/180.*np.pi) @ c2w
+    c2w = np.array([[-1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]]) @ c2w
+    return c2w
+
+
+
+def screenshot(h, v, rd=radius):
+    p = pose_spherical(h, v, rd)
+    p = np.concatenate(p[:])
+    print("p", p.flatten().tolist())
+    p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+    print("p1", p1)
+
+    escript.eval("""
+        PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
+        // return PADrend.getActiveCamera().getWorldTransformationMatrix();
+    """.format(m=p1))
+
+
+    # x = rd * math.sin(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
+    # y = rd * math.sin(2*math.pi*v/360)
+    # z = rd * math.cos(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
 
     # global oldH
     # global oldV
 
-    escript.eval("""
-        var cam = PADrend.getActiveCamera();
-        cam.reset();
-        cam.setWorldPosition([{x}, {y}, {z}]);
+    # escript.eval("""
+    #     var cam = PADrend.getActiveCamera();
+    #     cam.reset();
+    #     cam.setWorldPosition([{x}, {y}, {z}]);
 
-        cam.rotateLocal_deg({h}, [0, 1, 0]);
-        cam.rotateLocal_deg({v}, [-1, 0, 0]);
-    """.format(x=offset[0] + x, y=offset[1] + y, z=offset[2] + z, h=h, v=v))
+    #     cam.rotateLocal_deg({h}, [0, 1, 0]);
+    #     cam.rotateLocal_deg({v}, [-1, 0, 0]);
+    # """.format(x=offset[0] + x, y=offset[1] + y, z=offset[2] + z, h=h, v=v))
 
     # oldH = h
     # oldV = v
@@ -60,13 +109,26 @@ def screenshot(h, v):
     #     //cam.rotateLocal_deg({v}, [1, 0, 0]);
     # """.format(x=x, y=y, z=z, h=360-h, v=360-v))
 
-    escript.eval("""
-        var cam = PADrend.getActiveCamera();
-        cam.setWorldPosition([{x}, {y}, {z}]);
-    """.format(x=x, y=y, z=z))
+    # escript.eval("""
+    #     var cam = PADrend.getActiveCamera();
+    #     cam.setWorldPosition([{x}, {y}, {z}]);
+    # """.format(x=x, y=y, z=z))
 
-    return r, np.array(escript.eval("PADrend.getActiveCamera().getWorldTransformationMatrix().toArray()"))
+    return r, p # np.array(escript.eval("PADrend.getActiveCamera().getWorldTransformationMatrix().toArray()"))
 
+def printMatrix(theta, phi, rd):
+    p = screenshot(theta, phi, rd)[1]
+    a = p #np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
+    print(a[0:4])
+    print(a[4:8])
+    print(a[8:12])
+    print(a[12:16])
+
+def setAngles(t, p, r):
+    global theta, phi, radius
+    theta=t
+    phi=p
+    radius=r
 
 def sample(count, filename):
     count = int(count)
@@ -75,19 +137,25 @@ def sample(count, filename):
     poses = np.zeros((count, 4, 4))
 
     for i in range(count):
-        image, pose = screenshot(random.randint(0, 359), random.randint(0, 30))
+        image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
         
         images[i] = image.reshape((res, res, 3)) / 256
-        poses[i] = pose.reshape((4, 4)) / radius
+        p = pose.reshape((4, 4))
+
+        # the order has to be changed, don't know why
+        # poses[i] = np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
+        # poses[i] = np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
+        poses[i] = p
 
     # return images, poses
 
-    np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=20)
+    np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
     print("sampled", count, "poses to", filename)
 
 
+
 def render():
-    global i
+    global i, oldH, oldV, oldR, oldImg
 
     # h = 360 * math.sin(2 * math.pi * i / 360)
     h = i
@@ -96,12 +164,24 @@ def render():
     # h = 0
     # v = 0
 
-    i += speed
-
-    if model == None:
-        r, _ = screenshot(h, v)
+    if speed == 0:
+        h = theta
+        v = phi
     else:
-        r = nerfRender(h, v, 3) * 256
+        i += speed
+
+    if h==oldH and v==oldV and radius==oldR:
+        return oldImg
+    
+    if model == None:
+        r, _ = screenshot(h, v, radius)
+    else:
+        r = nerfRender(h, v, radius) * 256
+
+    oldH=h
+    oldV=v
+    oldR=radius
+    oldImg = r
 
     return r
 
@@ -134,7 +214,7 @@ def loadModel(path):
     global H, W, focal
     H = 100
     W = 100
-    focal = 20
+    focal = 138
     
     global model
     print("load", str(Path(__file__).parent.absolute()) + '/' + path)
