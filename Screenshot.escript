@@ -21,11 +21,18 @@ RenderFlow._screenshot := fn(x, y, bgColor=PADrend.getBGColor()) {
 
 	renderingContext.pushViewport();
 	renderingContext.setViewport(0, 0, x, y);
-
 	PADrend.renderScene(PADrend.getRootNode(), void, PADrend.getRenderingFlags(), bgColor, PADrend.getRenderingLayers());
 	renderingContext.finish();
-
 	renderingContext.popViewport();
+
+
+    // twice, because the scene isn't updated otherwise
+	renderingContext.pushViewport();
+	renderingContext.setViewport(0, 0, x, y);
+	PADrend.renderScene(PADrend.getRootNode(), void, PADrend.getRenderingFlags(), bgColor, PADrend.getRenderingLayers());
+	renderingContext.finish();
+	renderingContext.popViewport();
+
 	renderingContext.popFBO();
 
 	return [renderingContext, dims[x+", "+y][1]];

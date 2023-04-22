@@ -2,6 +2,7 @@
 
 from errno import ESRCH
 import numpy as np
+import cv2
 import tensorflow as tf
 from pathlib import Path
 import math
@@ -10,6 +11,8 @@ import random
 import escript
 
 # import TinyNerf as nerf
+
+# TODO custom output res
 
 res = 100
 
@@ -71,9 +74,9 @@ def pose_spherical(theta, phi, radius):
 def screenshot(h, v, rd=radius):
     p = pose_spherical(h, v, rd)
     p = np.concatenate(p[:])
-    print("p", p.flatten().tolist())
+    # print("p", p.flatten().tolist())
     p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
-    print("p1", p1)
+    # print("p1", p1)
 
     escript.eval("""
         PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
@@ -133,10 +136,18 @@ def setAngles(t, p, r):
 def sample(count, filename):
     count = int(count)
 
+    print("count",count)
+
+    # data = np.load(str(Path(__file__).parent.absolute()) + '/' + 'tiny_nerf_data.npz')
+    # poses = data['poses']
     images = np.zeros((count, res, res, 3))
     poses = np.zeros((count, 4, 4))
 
     for i in range(count):
+
+        # p = np.concatenate(poses[i][:])
+        # p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+
         image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
         
         images[i] = image.reshape((res, res, 3)) / 256
@@ -148,6 +159,11 @@ def sample(count, filename):
         poses[i] = p
 
     # return images, poses
+
+    print(images.shape, poses.shape)
+
+    print("count",count)
+
 
     np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
     print("sampled", count, "poses to", filename)
@@ -176,7 +192,21 @@ def render():
     if model == None:
         r, _ = screenshot(h, v, radius)
     else:
-        r = nerfRender(h, v, radius) * 256
+        # r = np.zeros((res, res, 3))
+        if speed == -1:
+            # m = np.array(escript.eval("PADrend.getActiveCamera().getWorldTransformationMatrix().toArray()"))
+            # # m = np.concatenate(poses[i][:])
+            # m = np.concatenate([-m[0:4], m[8:12], m[4:8], m[12:16]])
+            # m = m.reshape((4, 4)).astype(np.double)
+            # r = nerfRender(m) * 256
+            x, z = escript.eval("""
+                var cam = PADrend.getActiveCamera();
+                return [cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()];
+            """)
+            r = nerfRender(pose_spherical(x * 4, z * 4, radius)) * 256
+        else:
+            r = nerfRender(pose_spherical(h, v, radius)) * 256
+        r = cv2.resize(r, (res, res))
 
     oldH=h
     oldV=v
@@ -210,11 +240,11 @@ H, W, focal = None, None, None
 N_samples = 64
 
 
-def loadModel(path):
+def loadModel(path, w, h, f):
     global H, W, focal
-    H = 100
-    W = 100
-    focal = 138
+    W = w
+    H = h
+    focal = f
     
     global model
     print("load", str(Path(__file__).parent.absolute()) + '/' + path)
@@ -380,16 +410,20 @@ def pose_spherical(theta, phi, radius):
     return c2w
 
 
-def nerfRender(theta, phi, radius):
+# def nerfRender(theta, phi, radius):
 
-    print("render", theta, phi, radius)
+#     # print("render", theta, phi, radius)
 
-    c2w = pose_spherical(theta, phi, radius)
-    rays_o, rays_d = get_rays(H, W, focal, c2w[:3,:4])
+#     c2w = pose_spherical(theta, phi, radius)
+
+#     return nerfRender(c2w)
+
+def nerfRender(matrix):
+    rays_o, rays_d = get_rays(H, W, focal, matrix[:3,:4])
     rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples)
     img = np.clip(rgb,0,1)
 
-    print("rendered")
+    # print("rendered")
     
     return img
 

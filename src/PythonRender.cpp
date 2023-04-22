@@ -58,6 +58,8 @@ static PyObject *screenshot(PyObject *self, PyObject *args)
     Rendering::RenderingContext *c = dynamic_cast<E_Rendering::E_RenderingContext *>(a->at(0).get())->ref();
     Rendering::Texture *t = dynamic_cast<E_Rendering::E_Texture *>(a->at(1).get())->ref().get();
 
+    // pixels = RenderFlow::getTextureData(*c, *t);
+    // r = EScript::eval(*runtime, EScript::StringData("RenderFlow._screenshot(" + std::to_string(x) + ", " + std::to_string(y) + ");"));
     pixels = RenderFlow::getTextureData(*c, *t);
 
     npy_intp dims[1] = {(npy_intp)pixels.size()};
