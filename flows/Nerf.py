@@ -1,3 +1,5 @@
+# WARNING not finished!
+
 # https://colab.research.google.com/github/bmild/nerf/blob/master/tiny_nerf.ipynb
 
 from errno import ESRCH
@@ -14,7 +16,7 @@ import escript
 
 # TODO custom output res
 
-res = 100
+res = 256
 
 offset = [0, 0, 0]
 radius = 4

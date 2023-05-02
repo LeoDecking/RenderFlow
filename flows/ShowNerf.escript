@@ -11,4 +11,4 @@ var showNerf = new RenderFlow.Flow({
     RenderFlow.Flow.DATA_FROM_FLOAT: false,
     RenderFlow.Flow.DIM: [100, 100]
 });
-RenderFlow.register(showNerf);
+// RenderFlow.register(showNerf);
