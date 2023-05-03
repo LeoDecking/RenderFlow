@@ -25,7 +25,9 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 2. <code>pip install numpy tensorflow</code>
 3. Clone RenderFlow to <code>extPlugins/</code>
 4. Configure and build in <b>release</b> mode
-5. Enjoy!😊
+5. Activate in PADrend: <i>Config > Plugins > RenderFlow</i>
+6. Restart PADrend
+7. Enjoy!😊
 <!-- ('export PYTHONFAULTHANDLER=1' for more detailed error messages) -->
 
 ### `RenderFlow.PythonModule`:
@@ -99,9 +101,14 @@ PRERENDER_DIRECT_CACHE: Bool // True -> don't call the model again for same inpu
 PRERENDER_SPLITSCREEN: Bool // True -> display the original and the flow's render result
 ```
 
+![](tutorial/flows.png)
+
+Registered flows can be activated in the menu.
+
 ### EScript functions:
 
 ```ts
+void register(Flow flow) // register the flow, so that it's displayed in the RenderFlow menu
 void activate(Flow flow) // activate the flow, deactivate the current flow
 void deactivate() // deactivate the current flow
 
