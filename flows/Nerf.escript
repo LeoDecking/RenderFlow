@@ -10,4 +10,4 @@ var nerf = new RenderFlow.Flow({
     RenderFlow.Flow.DATA_FROM_FLOAT: false,
     RenderFlow.Flow.DIM: [175, 175]
 });
-RenderFlow.register(nerf);
+// RenderFlow.register(nerf);

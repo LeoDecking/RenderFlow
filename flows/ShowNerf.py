@@ -1,3 +1,5 @@
+# WARNING not finished!
+
 # https://colab.research.google.com/github/bmild/nerf/blob/master/tiny_nerf.ipynb
 
 from errno import ESRCH
