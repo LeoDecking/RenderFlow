@@ -27,7 +27,7 @@ add_library(${PROJECT_NAME} SHARED
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PYTHON_LIBRARIES} Python3::NumPy)
-# target_link_libraries(${PROJECT_NAME} PRIVATE Python3::NumPy)
+# target_link_libraries(${PROJECT_NAME} PRIVATE Python3::Nu mPy)
 
 
 # pass the project name to the Main.cpp file in form of the define 'LIBRARY_NAME'

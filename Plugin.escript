@@ -34,7 +34,6 @@ plugin.init @(override) := fn() {
 	load(__DIR__ + "/flows/PythonPrerenderFlow.escript");
 	load(__DIR__ + "/flows/PythonUpscaleFlow.escript");
 	load(__DIR__ + "/flows/Nerf.escript");
-	load(__DIR__ + "/flows/ShowNerf.escript"); // TODO remove
 
 	module.on('PADrend/gui', initGUI);
 

@@ -22,10 +22,12 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 ### Installation:
 
 1. Install Python3 (< 3.11, because tensorflow support is missing there)
-2. <code>pip install numpy tensorflow</code>
+2. Follow [this tutorial](https://www.tensorflow.org/install/pip#windows-native) for installing tensorflow on Windows native, but <b>without</b> conda
 3. Clone RenderFlow to <code>extPlugins/</code>
 4. Configure and build in <b>release</b> mode
-5. Enjoy!😊
+5. Activate in PADrend: <i>Config > Plugins > RenderFlow</i>
+6. Restart PADrend
+7. Enjoy!😊
 <!-- ('export PYTHONFAULTHANDLER=1' for more detailed error messages) -->
 
 ### `RenderFlow.PythonModule`:
@@ -99,9 +101,14 @@ PRERENDER_DIRECT_CACHE: Bool // True -> don't call the model again for same inpu
 PRERENDER_SPLITSCREEN: Bool // True -> display the original and the flow's render result
 ```
 
+![](tutorial/flows.png)
+
+Registered flows can be activated in the menu.
+
 ### EScript functions:
 
 ```ts
+void register(Flow flow) // register the flow, so that it's displayed in the RenderFlow menu
 void activate(Flow flow) // activate the flow, deactivate the current flow
 void deactivate() // deactivate the current flow
 
@@ -182,7 +189,7 @@ simpleFlow.render @(override) := fn(prerender) {
     return output;
 };
 
-RenderFlow.activate(simpleFlow);
+RenderFlow.register(simpleFlow);
 ```
 This flow will genrate the folowing output:<br>
 ![](tutorial/simpleFlow.jpg)
@@ -197,7 +204,7 @@ var pythonSimpleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.activate(pythonSimpleFlow);
+RenderFlow.register(pythonSimpleFlow);
 ```
 
 ```python
@@ -254,7 +261,7 @@ myFlow.render @(override) := fn() {
     return output;
 };
 
-RenderFlow.activate(myFlow);
+RenderFlow.register(myFlow);
 ```
 ![](tutorial/myFlow.jpg)
 <br>
@@ -271,7 +278,7 @@ var pythonMyFlow = new RenderFlow.Flow({
     RenderFlow.Flow.DIM: [64, 64],
     RenderFlow.Flow.FORMAT: 'MONO_COLORMAP'
 });
-RenderFlow.activate(pythonMyFlow);
+RenderFlow.register(pythonMyFlow);
 ```
 ```python
 # MyFlow.py
@@ -327,7 +334,7 @@ var pythonPrerenderFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.activate(pythonPrerenderFlow);
+RenderFlow.register(pythonPrerenderFlow);
 ```
 ```python
 # Prerender.py
@@ -386,7 +393,7 @@ var pythonUpscaleFlow = new RenderFlow.Flow({
     RenderFlow.Flow.FORMAT: 'RGB'
 });
 
-RenderFlow.activate(pythonUpscaleFlow);
+RenderFlow.register(pythonUpscaleFlow);
 ```
 ```python
 # Upscaling.py
@@ -410,4 +417,39 @@ def render(prerender):
     r = np.clip(r.numpy()*256, 0, 255)
 
     return r
+```
+
+### TinyNerf
+You can train and render [TinyNerf](https://colab.research.google.com/github/bmild/nerf/blob/master/tiny_nerf.ipynb) models:
+
+![](tutorial/nerf.png)
+
+At first, activate the <i>Nerf</i>-flow in the menu.
+
+```js
+var module = new RenderFlow.PythonModule("../extPlugins/RenderFlow/flows/Nerf.py");
+
+// start (or continue) training for 'iters' iterations
+module.execute("startTraining", iters: Number);
+
+// generate 'count' screenshot from random poses and store as .npz as 'filename'
+module.execute("sample", count: Number, filename: String);
+
+// save model to directory 'path'
+module.execute("saveModel", path: string);
+
+// load model from directory 'path'
+module.execute("loadModel", path: string, width: Number, height: Number, focal: Number);
+
+// rotation speed for rendering, set -1 for wasd-controll
+module.execute("setSpeed", speed: Number);
+
+// set the angles (for speed=0)
+module.execute("setAngles", theta: Number, phi: Number, radius: Number);
+
+// reset model
+module.execute("resetModel");
+
+
+//module.execute("loadModel", "drums_model", 100, 100, 320);
 ```

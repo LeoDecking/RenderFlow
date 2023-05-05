@@ -10,11 +10,9 @@ import random
 
 import escript
 
-# import TinyNerf as nerf
-
 # TODO custom output res
 
-res = 100
+res = 128
 
 offset = [0, 0, 0]
 radius = 4
@@ -27,105 +25,45 @@ oldR=None
 oldImg=None
 
 
-speed = 0
+speed = 1
 
 i = 0
+
+gen = None
 
 
 def init():
     print("Hey, I'm Python!")
 
+def startTraining(iters):
+    global gen
+    gen = train_generator(int(iters))
+
 def setSpeed(s):
     global speed
+    print("old: ", speed)
     speed = s
+    print("new: ", speed)
 
-
-trans_t = lambda t : tf.convert_to_tensor([
-    [1,0,0,0],
-    [0,1,0,0],
-    [0,0,1,t],
-    [0,0,0,1],
-], dtype=tf.float32)
-
-rot_phi = lambda phi : tf.convert_to_tensor([
-    [1,0,0,0],
-    [0,tf.cos(phi),-tf.sin(phi),0],
-    [0,tf.sin(phi), tf.cos(phi),0],
-    [0,0,0,1],
-], dtype=tf.float32)
-
-rot_theta = lambda th : tf.convert_to_tensor([
-    [tf.cos(th),0,-tf.sin(th),0],
-    [0,1,0,0],
-    [tf.sin(th),0, tf.cos(th),0],
-    [0,0,0,1],
-], dtype=tf.float32)
-
-
-def pose_spherical(theta, phi, radius):
-    c2w = trans_t(radius)
-    c2w = rot_phi(phi/180.*np.pi) @ c2w
-    c2w = rot_theta(theta/180.*np.pi) @ c2w
-    c2w = np.array([[-1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]]) @ c2w
-    return c2w
-
-
+def resetModel():
+    global model
+    global optimizer
+    model = None
+    optimizer = None
 
 def screenshot(h, v, rd=radius):
     p = pose_spherical(h, v, rd)
     p = np.concatenate(p[:])
-    # print("p", p.flatten().tolist())
     p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
-    # print("p1", p1)
 
     escript.eval("""
         PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
         // return PADrend.getActiveCamera().getWorldTransformationMatrix();
     """.format(m=p1))
 
-
-    # x = rd * math.sin(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
-    # y = rd * math.sin(2*math.pi*v/360)
-    # z = rd * math.cos(2*math.pi*h/360) * math.cos(2*math.pi*v/360)
-
-    # global oldH
-    # global oldV
-
-    # escript.eval("""
-    #     var cam = PADrend.getActiveCamera();
-    #     cam.reset();
-    #     cam.setWorldPosition([{x}, {y}, {z}]);
-
-    #     cam.rotateLocal_deg({h}, [0, 1, 0]);
-    #     cam.rotateLocal_deg({v}, [-1, 0, 0]);
-    # """.format(x=offset[0] + x, y=offset[1] + y, z=offset[2] + z, h=h, v=v))
-
-    # oldH = h
-    # oldV = v
-
     r = escript.screenshot(res, res)
 
-    # escript.eval("""
-    #     var cam = PADrend.getActiveCamera();
-
-    #     cam.rotateLocal_deg({h}, [0, 1, 0]);
-    #     //cam.rotateLocal_deg({v}, [1, 0, 0]);
-    # """.format(x=x, y=y, z=z, h=360-h, v=360-v))
-
-    # escript.eval("""
-    #     var cam = PADrend.getActiveCamera();
-    #     cam.setWorldPosition([{x}, {y}, {z}]);
-    # """.format(x=x, y=y, z=z))
-
-    return r, p # np.array(escript.eval("PADrend.getActiveCamera().getWorldTransformationMatrix().toArray()"))
-
-def printMatrix(theta, phi, rd):
-    p = screenshot(theta, phi, rd)[1]
-    a = p #np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
-    print(a[0:4])
-    print(a[4:8])
-    print(a[8:12])
-    print(a[12:16])
+    return r, p
 
 def setAngles(t, p, r):
     global theta, phi, radius
@@ -136,49 +74,31 @@ def setAngles(t, p, r):
 def sample(count, filename):
     count = int(count)
 
-    print("count",count)
-
-    # data = np.load(str(Path(__file__).parent.absolute()) + '/' + 'tiny_nerf_data.npz')
-    # poses = data['poses']
     images = np.zeros((count, res, res, 3))
     poses = np.zeros((count, 4, 4))
 
     for i in range(count):
-
-        # p = np.concatenate(poses[i][:])
-        # p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
 
         image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
         
         images[i] = image.reshape((res, res, 3)) / 256
         p = pose.reshape((4, 4))
 
-        # the order has to be changed, don't know why
-        # poses[i] = np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
-        # poses[i] = np.concatenate([-p[0:2], p[2:4], -p[8:10], p[10:12], p[4:6], -p[6:8], p[12:16]])
         poses[i] = p
 
-    # return images, poses
 
     print(images.shape, poses.shape)
-
-    print("count",count)
-
 
     np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
     print("sampled", count, "poses to", filename)
 
 
 
-def render():
+def render(prerender):
     global i, oldH, oldV, oldR, oldImg
 
-    # h = 360 * math.sin(2 * math.pi * i / 360)
     h = i
-    v = 30 * math.cos(2 * math.pi * i / 360)
-
-    # h = 0
-    # v = 0
+    v = -15 - 15 * math.cos(2 * math.pi * i / 360)
 
     if speed == 0:
         h = theta
@@ -186,19 +106,17 @@ def render():
     else:
         i += speed
 
+    # print(h, v, i, speed)
+
+    if gen != None:
+        return next(gen)
+
     if h==oldH and v==oldV and radius==oldR:
         return oldImg
-    
     if model == None:
         r, _ = screenshot(h, v, radius)
     else:
-        # r = np.zeros((res, res, 3))
         if speed == -1:
-            # m = np.array(escript.eval("PADrend.getActiveCamera().getWorldTransformationMatrix().toArray()"))
-            # # m = np.concatenate(poses[i][:])
-            # m = np.concatenate([-m[0:4], m[8:12], m[4:8], m[12:16]])
-            # m = m.reshape((4, 4)).astype(np.double)
-            # r = nerfRender(m) * 256
             x, z = escript.eval("""
                 var cam = PADrend.getActiveCamera();
                 return [cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()];
@@ -206,6 +124,16 @@ def render():
             r = nerfRender(pose_spherical(x * 4, z * 4, radius)) * 256
         else:
             r = nerfRender(pose_spherical(h, v, radius)) * 256
+
+            p = pose_spherical(h, v, radius)
+            p = np.concatenate(p[:])
+            p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+
+            escript.eval("""
+                PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
+                // return PADrend.getActiveCamera().getWorldTransformationMatrix();
+            """.format(m=p1))
+
         r = cv2.resize(r, (res, res))
 
     oldH=h
@@ -215,6 +143,36 @@ def render():
 
     return r
 
+def train_generator(iters):
+    global model
+    global optimizer
+    global gen
+
+    if model == None:
+        model = init_model()
+        optimizer = tf.keras.optimizers.Adam(5e-4)
+
+    t = time.time()
+    for i in range(iters):
+        image, pose = screenshot(random.randint(0, 359), random.randint(-45, 0))        
+        image = image.reshape((res, res, 3)) / 256
+        pose = pose.reshape((4, 4))
+
+        rays_o, rays_d = get_rays(res, res, focal, pose)
+        with tf.GradientTape() as tape:
+            rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples, rand=True)
+            loss = tf.reduce_mean(tf.square(rgb - image))
+
+            print(i, (time.time() - t), 'secs per iter')
+            t = time.time()
+            yield np.clip(rgb,0,1) * 256
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    print('Done')
+    gen = None
+    yield np.zeros(res*res*3)
 
 
 
@@ -229,13 +187,14 @@ from pathlib import Path
 import tensorflow as tf
 tf.compat.v1.enable_eager_execution()
 
-from tqdm import tqdm_notebook as tqdm
+# from tqdm import tqdm_notebook as tqdm
 import numpy as np
 # import matplotlib.pyplot as plt
 
 # TODO 
 model = None
-H, W, focal = None, None, None
+optimizer = None
+H, W, focal = res, res, 130
 
 N_samples = 64
 
@@ -249,6 +208,11 @@ def loadModel(path, w, h, f):
     global model
     print("load", str(Path(__file__).parent.absolute()) + '/' + path)
     model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/' + path)
+
+def saveModel(path):
+    global model
+    print("save", str(Path(__file__).parent.absolute()) + '/' + path)
+    model.save(str(Path(__file__).parent.absolute()) + '/' + path)
 
 
 def posenc(x):
@@ -410,20 +374,10 @@ def pose_spherical(theta, phi, radius):
     return c2w
 
 
-# def nerfRender(theta, phi, radius):
-
-#     # print("render", theta, phi, radius)
-
-#     c2w = pose_spherical(theta, phi, radius)
-
-#     return nerfRender(c2w)
-
 def nerfRender(matrix):
     rays_o, rays_d = get_rays(H, W, focal, matrix[:3,:4])
     rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples)
     img = np.clip(rgb,0,1)
-
-    # print("rendered")
     
     return img
 
