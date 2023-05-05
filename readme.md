@@ -120,6 +120,7 @@ Number[] uint8ToFloat(Number[] data) // x -> floor(x / 255)
 Number[] floatToUint8(Number[] data) // x -> clamp(x, 0.0, 1.0) * 255
 
 [Number angleH, Number angleV] getCameraAngles(Camera cam) // get the camera's angles
+Number[] screenshot(Number width, Number height) // take a screenshot
 
 
 getTextureData: internal
