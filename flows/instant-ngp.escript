@@ -1,6 +1,6 @@
-var nerf = new RenderFlow.Flow({
-    RenderFlow.Flow.NAME: 'nerf',
-    RenderFlow.Flow.PYTHON_PATH: __DIR__+'/Nerf.py',
+var instantNgp = new RenderFlow.Flow({
+    RenderFlow.Flow.NAME: 'instant-ngp',
+    RenderFlow.Flow.PYTHON_PATH: __DIR__+'/instant-ngp.py',
 
     RenderFlow.Flow.PRERENDER: true,
     RenderFlow.Flow.PRERENDER_DIM: [512, 512],
@@ -10,4 +10,4 @@ var nerf = new RenderFlow.Flow({
     RenderFlow.Flow.DATA_FROM_FLOAT: false,
     RenderFlow.Flow.DIM: [512, 512]
 });
-// RenderFlow.register(nerf);
+RenderFlow.register(instantNgp);
