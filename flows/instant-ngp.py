@@ -19,6 +19,7 @@ import pyngp as ngp # noqa
 
 
 testbed = ngp.Testbed()
+testbed.root_dir = str(Path(__file__).parent.absolute()) + '/instant-ngp'
 
 # TODO custom output res
 
@@ -29,97 +30,76 @@ res = 512
 
 def init():
     print("Hey, I'm Python!")
-    loadSnapshot()
+    # loadSnapshot()
 
 
 def loadSnapshot(path="instant-ngp/data/nerf/padrend/base.ingp"):
-    print("load", str(Path(__file__).parent.absolute()) + '/' + path)
+    print("load snapshot:", str(Path(__file__).parent.absolute()) + '/' + path)
     testbed.load_snapshot(str(Path(__file__).parent.absolute()) + '/' + path)
     
+def loadTransforms(path="instant-ngp/data/nerf/padrend/transforms.json"):
+    print("load transforms:", str(Path(__file__).parent.absolute()) + '/' + path)
+    testbed.shall_train = False
+    testbed.load_training_data(str(Path(__file__).parent.absolute()) + '/' + path)
+    print(testbed.nerf.training.dataset)
+
+gen = None
+N = 0
+
+def startTraining(n_steps=100):
+    global N
+    N += int(n_steps)
+
+    global gen
+    gen = train_generator()
 
 
-# def screenshot(h, v, rd=radius):
-#     p = pose_spherical(h, v, rd)
-#     p = np.concatenate(p[:])
-#     p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+    # testbed.shall_train = False
 
-#     escript.eval("""
-#         PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
-#         // return PADrend.getActiveCamera().getWorldTransformationMatrix();
-#     """.format(m=p1))
+def train_generator():
+    global gen
 
-#     r = escript.screenshot(res, res)
+    testbed.shall_train = True
 
-#     return r, p
+    while testbed.frame():
+        # if testbed.want_repl():
+        #     repl(testbed)
+        # What will happen when training is done?
+        if testbed.training_step >= N:
+            testbed.shall_train = False
+            gen = None
+            print("done")
+            break
 
-# def setAngles(t, p, r):
-#     global theta, phi, radius
-#     theta=t
-#     phi=p
-#     radius=r
-
-# def sample(count, filename):
-#     count = int(count)
-
-#     images = np.zeros((count, res, res, 3))
-#     poses = np.zeros((count, 4, 4))
-
-#     for i in range(count):
-
-#         image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
-        
-#         images[i] = image.reshape((res, res, 3)) / 256
-#         p = pose.reshape((4, 4))
-
-#         poses[i] = p
-
-
-#     print(images.shape, poses.shape)
-
-#     np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
-#     print("sampled", count, "poses to", filename)
-
-# def sampleInstant(count, directory):
-
-#     if Path(directory).exists():
-#         print("directory already exists!")
-#         return
-#     os.makedirs(directory + "/images")
-
-#     count = int(count)
-
-#     images = np.zeros((count, res, res, 3))
-#     poses = np.zeros((count, 4, 4))
-
-#     for i in range(count):
-
-#         image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
-        
-#         cv2.imwrite(directory + "/images/" + str(i+10001)[-4:] + ".jpg", cv2.cvtColor(np.float32(image.reshape((res, res, 3))), cv2.COLOR_RGB2BGR))
-#         images[i] = image.reshape((res, res, 3)) / 256
-#         p = pose.reshape((4, 4))
-
-#         poses[i] = p
-
-#     print(images.shape, poses.shape)
-
+        if testbed.training_step % 25 == 0:
+            yield _render()
     
-#     print("sampled", count, "poses to", directory)
-
+    yield _render()
 
 
 def render(prerender):
+    if gen != None:
+        return next(gen)
+    
+
+    
+
+    # if testbed.training_step >= N:
+    #     testbed.shall_train = False
+    # print("training_step: ", testbed.training_step, ", N: ", N)
+
+    return _render()
+
+def _render():
     m = escript.eval("""
                 var cam = PADrend.getActiveCamera();
                 return cam.getWorldTransformationMatrix().toArray()
             """)
-        # r = cv2.resize(r, (res, res))
-    # print(matrix)
+
     m = np.array(m)
     m = np.concatenate([m[0:4], m[8:12], m[4:8], m[12:16]])
     m = np.reshape(m, (4, 4))
-    # print(matrix)
     testbed.set_nerf_camera_matrix(np.matrix(m)[:-1,:])
     r = testbed.render(res, res, 1, True) * 256
-
+    
     return r[:, :, :3]
