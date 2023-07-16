@@ -92,33 +92,6 @@ def sample(count, filename):
     np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
     print("sampled", count, "poses to", filename)
 
-def sampleInstant(count, directory):
-
-    if Path(directory).exists():
-        print("directory already exists!")
-        return
-    os.makedirs(directory + "/images")
-
-    count = int(count)
-
-    images = np.zeros((count, res, res, 3))
-    poses = np.zeros((count, 4, 4))
-
-    for i in range(count):
-
-        image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
-        
-        cv2.imwrite(directory + "/images/" + str(i+10001)[-4:] + ".jpg", cv2.cvtColor(np.float32(image.reshape((res, res, 3))), cv2.COLOR_RGB2BGR))
-        images[i] = image.reshape((res, res, 3)) / 256
-        p = pose.reshape((4, 4))
-
-        poses[i] = p
-
-    print(images.shape, poses.shape)
-
-    
-    print("sampled", count, "poses to", directory)
-
 
 
 def render(prerender):
