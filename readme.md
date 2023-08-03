@@ -4,7 +4,8 @@ This plugin defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
 A <code>Flow</code> defines how the render process should be modified.<br/>
 Therefore a new <code>render()</code> method can be defined in EScript or in Python with access to the pixels by the standard renderer.<br>
 In EScript, a tensorflow saved model can be used via an given interface.<br/>
-If the <code>render()</code> method is defined in Python, arbitrary EScript code can be evaluated.
+If the <code>render()</code> method is defined in Python, arbitrary EScript code can be evaluated.<br/>
+Furthermore, flows for for using [TinyNerf](https://colab.research.google.com/github/bmild/nerf/blob/master/tiny_nerf.ipynb) or [Instant NGP](https://github.com/NVlabs/instant-ngp) are included.
 
 ### Content:
 - Installation
@@ -15,7 +16,9 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 - Examples
   - Tensorflow models
   - Prerendering
-  - Tensorflow + prerendering
+  - Prerendering + Tensorflow
+  - TinyNerf
+  - Instant NGP
 
 ### Installation:
 
@@ -423,7 +426,7 @@ You can train and render [TinyNerf](https://colab.research.google.com/github/bmi
 
 ![](tutorial/nerf.png)
 
-At first, activate the <i>TinyNerf</i>-flow in the menu.
+Then, activate the <i>TinyNerf</i>-flow in the menu.
 
 ```js
 var module = new RenderFlow.PythonModule("../extPlugins/RenderFlow/flows/TinyNerf.py");
