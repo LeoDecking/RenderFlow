@@ -1,7 +1,5 @@
 # RenderFlow
 
-// TODO tensorflow gpu support
-
 This plugin defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
 A <code>Flow</code> defines how the render process should be modified.<br/>
 Therefore a new <code>render()</code> method can be defined in EScript or in Python with access to the pixels by the standard renderer.<br>
