@@ -41,6 +41,3 @@ RenderFlow._screenshot := fn(x, y, bgColor=PADrend.getBGColor()) {
 RenderFlow.screenshot := fn(x, y, asFloat=false, bgColor=PADrend.getBGColor()) {
     return RenderFlow.getTextureData(renderingContext, _screenshot(x, y, bgColor)[1], asFloat);
 };
-
-// _screenshot;
-// RenderFlow.screenshot = screenshot;

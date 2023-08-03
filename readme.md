@@ -22,7 +22,7 @@ If the <code>render()</code> method is defined in Python, arbitrary EScript code
 ### Installation:
 
 1. Install Python3 (< 3.11, because tensorflow support is missing there)
-2. Follow [this tutorial](https://www.tensorflow.org/install/pip#windows-native) for installing tensorflow on Windows native, but <b>without</b> conda
+2. Follow [this tutorial](https://www.tensorflow.org/install/pip#windows-native) for installing tensorflow 2.10 on Windows native, but <b>without</b> conda
 3. Clone RenderFlow to <code>extPlugins/</code>
 4. Configure and build in <b>release</b> mode
 5. Activate in PADrend: <i>Config > Plugins > RenderFlow</i>
@@ -425,22 +425,22 @@ You can train and render [TinyNerf](https://colab.research.google.com/github/bmi
 
 ![](tutorial/nerf.png)
 
-At first, activate the <i>Nerf</i>-flow in the menu.
+At first, activate the <i>TinyNerf</i>-flow in the menu.
 
 ```js
-var module = new RenderFlow.PythonModule("../extPlugins/RenderFlow/flows/Nerf.py");
+var module = new RenderFlow.PythonModule("../extPlugins/RenderFlow/flows/TinyNerf.py");
 
 // start (or continue) training for 'iters' iterations
 module.execute("startTraining", iters: Number);
 
-// generate 'count' screenshot from random poses and store as .npz as 'filename'
+// generate 'count' screenshots from random poses and store as .npz as 'filename'
 module.execute("sample", count: Number, filename: String);
 
 // save model to directory 'path'
-module.execute("saveModel", path: string);
+module.execute("saveModel", path: String);
 
 // load model from directory 'path'
-module.execute("loadModel", path: string, width: Number, height: Number, focal: Number);
+module.execute("loadModel", path: String, width: Number, height: Number, focal: Number);
 
 // rotation speed for rendering, set -1 for wasd-controll
 module.execute("setSpeed", speed: Number);
@@ -452,5 +452,71 @@ module.execute("setAngles", theta: Number, phi: Number, radius: Number);
 module.execute("resetModel");
 
 
-//module.execute("loadModel", "drums_model", 100, 100, 320);
+//module.execute("loadModel", "tinyPADrendModel", 100, 100, 130);
+//module.execute("loadModel", "tinyDrumsModel", 100, 100, 200);
+//module.execute("loadModel", "tinyExcavatorModel", 100, 100, 200);
+```
+
+
+### Instant NGP
+You can train and render [Instant NGP](https://github.com/NVlabs/instant-ngp) models:
+
+![](tutorial/instant.png)
+
+Therefore, you have to [build it](https://github.com/NVlabs/instant-ngp#building-instant-ngp-windows--linux) in the directory "*RenderFlow/flows/instant-ngp/*" as the flow is using the Python bindings.
+
+At first, activate the <i>instant-ngp</i>-flow in the menu.
+After (generating and) loading transforms, you can start the training and move freely in the scene.
+
+```js
+var module = new RenderFlow.PythonModule("../extPlugins/RenderFlow/flows/InstantNGP.py");
+
+// generate 'frames' screenshots from random poses and store together with a transforms.json in directory
+module.execute("createTransforms", frames: Number, directory: String = "instant-ngp/data/nerf/temp");
+// generate screenshots from given poses and store together with a transforms.json in directory
+// attention: poses transformation to PADrend is not 100% correct
+module.execute("createTransforms", frames: Number[16][], directory: String = "instant-ngp/data/nerf/temp");
+
+// load transforms.json with images
+module.execute("loadTransforms", path: String = "instant-ngp/data/nerf/temp/transforms.json");
+
+// start (or continue) training for 'iters' iterations
+module.execute("startTraining", iters: Number);
+
+
+// save model at 'path'
+module.execute("saveSnapshot", path: String="instant-ngp/data/nerf/temp/base.ingp");
+
+// load model from 'path'
+module.execute("loadSnapshot", path: String="instant-ngp/data/nerf/temp/base.ingp");
+
+
+// module.execute("createTransforms", [
+//     [0.880966, 0, -0.473181, -1.49992, 0, 1, 0, 1.62617, 0.473181, 0, 0.880966, 3.38497, 0, 0, 0, 1],
+//     [0.880966, 0, -0.473181, -3.85358, 0, 1, 0, 1.62617, 0.473181, 0, 0.880966, 7.76699, 0, 0, 0, 1],
+//     [0.880966, 0, -0.473181, -6.49552, 0, 1, 0, 1.62617, 0.473181, 0, 0.880966, 12.6857, 0, 0, 0, 1],
+//     [0.880966, 0, -0.473181, -7.0787, 0, 1, 0, 1.62617, 0.473181, 0, 0.880966, 4.34496, 0, 0, 0, 1],
+//     [0.433863, 0, -0.900979, -7.58806, 0, 1, 0, 3.60678, 0.900979, 0, 0.433863, 0.612725, 0, 0, 0, 1],
+//     [-0.173333, 0, -0.984864, -6.74611, 0, 1, 0, 2.81406, 0.984864, 0, -0.173333, -4.45465, 0, 0, 0, 1],
+//     [-0.173333, 0, -0.984864, -3.27024, 0, 1, 0, 2.81406, 0.984864, 0, -0.173333, -7.00095, 0, 0, 0, 1],
+//     [-0.980249, 0, -0.197771, 2.11895, 0, 1, 0, 2.81406, 0.197771, 0, -0.980249, -8.99828, 0, 0, 0, 1],
+//     [-0.980249, 0, -0.197771, 4.4375, 0, 1, 0, 2.81406, 0.197771, 0, -0.980249, -7.29558, 0, 0, 0, 1],
+//     [-0.980249, 0, -0.197771, 6.55377, 0, 1, 0, 2.81406, 0.197771, 0, -0.980249, -5.45811, 0, 0, 0, 1],
+//     [-0.786353, 0, 0.617779, 6.55377, 0, 1, 0, 2.81406, -0.617779, 0, -0.786353, -5.45811, 0, 0, 0, 1],
+//     [-0.786353, 0, 0.617779, 11.4312, 0, 1, 0, 2.81406, -0.617779, 0, -0.786353, -6.7819, 0, 0, 0, 1],
+//     [-0.786353, 0, 0.617779, 11.153, 0, 1, 0, 2.81406, -0.617779, 0, -0.786353, -3.42581, 0, 0, 0, 1],
+//     [-0.28925, 0, 0.957255, 10.9425, 0, 1, 0, 2.81406, -0.957255, 0, -0.28925, -0.411291, 0, 0, 0, 1],
+//     [0.28694, 0, 0.95795, 13.2167, 0, 1, 0, 2.81406, -0.95795, 0, 0.28694, 3.20483, 0, 0, 0, 1],
+//     [0.487376, 0, 0.873194, 12.6239, 0, 1, 0, 2.81406, -0.873194, 0, 0.487376, 5.18377, 0, 0, 0, 1],
+//     [0.487376, 0, 0.873194, 11.2517, 0, 1, 0, 2.81406, -0.873194, 0, 0.487376, 9.43814, 0, 0, 0, 1],
+//     [0.487376, 0, 0.873194, 8.09793, 0, 1, 0, 2.81406, -0.873194, 0, 0.487376, 10.4362, 0, 0, 0, 1],
+//     [0.98069, 0, 0.195577, -2.38841, 0, 1, 0, 2.81406, -0.195577, 0, 0.98069, 14.1021, 0, 0, 0, 1],
+//     [0.965239, 0, -0.261374, -6.70042, 0, 1, 0, 2.81406, 0.261374, 0, 0.965239, 9.21657, 0, 0, 0, 1],
+//     [0.965239, 0, -0.261374, -8.98566, 0, 1, 0, 2.81406, 0.261374, 0, 0.965239, 5.23726, 0, 0, 0, 1],
+//     [0.965239, 0, -0.261374, -11.5241, 0, 1, 0, 2.81406, 0.261374, 0, 0.965239, -0.451557, 0, 0, 0, 1],
+//     [0.208751, 0, -0.977971, -13.6198, 0, 1, 0, 2.81406, 0.977971, 0, 0.208751, -3.80222, 0, 0, 0, 1]
+// ]);
+
+//module.execute("loadTransforms", "instant-ngp/data/nerf/fox/transforms.json");
+//module.execute("startTraining", 100);
 ```

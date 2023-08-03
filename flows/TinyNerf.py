@@ -1,34 +1,204 @@
-IN_COLAB = False
+# https://colab.research.google.com/github/bmild/nerf/blob/master/tiny_nerf.ipynb
 
-# if IN_COLAB:
-#     %tensorflow_version 1.x
-
-import os, sys
 import time
-from pathlib import Path
+import numpy as np
+import cv2
 import tensorflow as tf
+from pathlib import Path
+import math
+import random
+
+import escript
+
 tf.compat.v1.enable_eager_execution()
 
-from tqdm import tqdm_notebook as tqdm
-import numpy as np
-# import matplotlib.pyplot as plt
+res = 512
 
-# TODO 
+offset = [0, 0, 0]
+radius = 4
+theta = 0
+phi = 0
+
+oldH=None
+oldV=None
+oldR=None
+oldImg=None
+
+
+speed = 1
+
+i = 0
+
+gen = None
+
+
+def init():
+    print("Hey, I'm Python!")
+
+def startTraining(iters):
+    global gen
+    gen = train_generator(int(iters))
+
+def setSpeed(s):
+    global speed
+    print("old: ", speed)
+    speed = s
+    print("new: ", speed)
+
+def resetModel():
+    global model
+    global optimizer
+    model = None
+    optimizer = None
+
+def screenshot(h, v, rd=radius):
+    p = pose_spherical(h, v, rd)
+    p = np.concatenate(p[:])
+    p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+
+    escript.eval("""
+        PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
+        // return PADrend.getActiveCamera().getWorldTransformationMatrix();
+    """.format(m=p1))
+
+    r = escript.screenshot(res, res)
+
+    return r, p
+
+def setAngles(t, p, r):
+    global theta, phi, radius
+    theta=t
+    phi=p
+    radius=r
+
+def sample(count, filename):
+    count = int(count)
+
+    images = np.zeros((count, res, res, 3))
+    poses = np.zeros((count, 4, 4))
+
+    for i in range(count):
+
+        image, pose = screenshot(random.randint(0, 359), random.randint(-90, 0))
+        
+        images[i] = image.reshape((res, res, 3)) / 256
+        p = pose.reshape((4, 4))
+
+        poses[i] = p
+
+
+    print(images.shape, poses.shape)
+
+    np.savez_compressed(filename, images=images.astype("float32"), poses=poses.astype("float32"), focal=130)
+    print("sampled", count, "poses to", filename)
+
+
+
+def render(prerender):
+    global i, oldH, oldV, oldR, oldImg
+
+    h = i
+    v = -15 - 15 * math.cos(2 * math.pi * i / 360)
+
+    if speed == 0:
+        h = theta
+        v = phi
+    else:
+        i += speed
+
+
+    if gen != None:
+        return next(gen)
+
+    if h==oldH and v==oldV and radius==oldR:
+        return oldImg
+    if model == None:
+        r, _ = screenshot(h, v, radius)
+    else:
+        if speed == -1:
+            x, z = escript.eval("""
+                var cam = PADrend.getActiveCamera();
+                return [cam.getWorldPosition().getX(), cam.getWorldPosition().getZ()];
+            """)
+            r = nerfRender(pose_spherical(x * 4, z * 4, radius)) * 256
+        else:
+            r = nerfRender(pose_spherical(h, v, radius)) * 256
+
+            p = pose_spherical(h, v, radius)
+            p = np.concatenate(p[:])
+            p1 = np.concatenate([-p[0:4], p[8:12], p[4:8], p[12:16]]).flatten().tolist()
+
+            escript.eval("""
+                PADrend.getActiveCamera().getParent().getParent().setMatrix(new Geometry.Matrix4x4({m}));
+                // return PADrend.getActiveCamera().getWorldTransformationMatrix();
+            """.format(m=p1))
+
+        r = cv2.resize(r, (res, res))
+
+    oldH=h
+    oldV=v
+    oldR=radius
+    oldImg = r
+
+    return r
+
+def train_generator(iters):
+    global model
+    global optimizer
+    global gen
+
+    if model == None:
+        model = init_model()
+        optimizer = tf.keras.optimizers.Adam(5e-4)
+
+    t = time.time()
+    for i in range(iters):
+        image, pose = screenshot(random.randint(0, 359), random.randint(-45, 0))        
+        image = image.reshape((res, res, 3)) / 256
+        pose = pose.reshape((4, 4))
+
+        rays_o, rays_d = get_rays(res, res, focal, pose)
+        with tf.GradientTape() as tape:
+            rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples, rand=True)
+            loss = tf.reduce_mean(tf.square(rgb - image))
+
+            print(i, (time.time() - t), 'secs per iter')
+            t = time.time()
+            yield np.clip(rgb,0,1) * 256
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    print('Done')
+    gen = None
+    yield np.zeros(res*res*3)
+
+
+
+
+
+
 model = None
-H, W, focal = None, None, None
+optimizer = None
+H, W, focal = res, res, 130
 
 N_samples = 64
 
 
-def loadModel(path):
+def loadModel(path, w, h, f):
     global H, W, focal
-    H = 100
-    W = 100
-    focal = 20
+    W = w
+    H = h
+    focal = f
     
     global model
     print("load", str(Path(__file__).parent.absolute()) + '/' + path)
     model = tf.saved_model.load(str(Path(__file__).parent.absolute()) + '/' + path)
+
+def saveModel(path):
+    global model
+    print("save", str(Path(__file__).parent.absolute()) + '/' + path)
+    model.save(str(Path(__file__).parent.absolute()) + '/' + path)
 
 
 def posenc(x):
@@ -40,8 +210,6 @@ def posenc(x):
 
 L_embed = 6
 embed_fn = posenc
-# L_embed = 0
-# embed_fn = tf.identity
 
 def init_model(D=8, W=256):
     relu = tf.keras.layers.ReLU()    
@@ -117,9 +285,6 @@ def train(path):
     optimizer = tf.keras.optimizers.Adam(5e-4)
 
     N_iters = 1000
-    psnrs = []
-    iternums = []
-    i_plot = 25
 
     t = time.time()
     for i in range(N_iters+1):
@@ -134,28 +299,6 @@ def train(path):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         
-        # TODO visualize
-        # if i%i_plot==0:
-        #     print(i, (time.time() - t) / i_plot, 'secs per iter')
-        #     t = time.time()
-            
-        #     # Render the holdout view for logging
-        #     rays_o, rays_d = get_rays(H, W, focal, testpose)
-        #     rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples)
-        #     loss = tf.reduce_mean(tf.square(rgb - testimg))
-        #     psnr = -10. * tf.math.log(loss) / tf.math.log(10.)
-
-        #     psnrs.append(psnr.numpy())
-        #     iternums.append(i)
-            
-        #     plt.figure(figsize=(10,4))
-        #     plt.subplot(121)
-        #     plt.imshow(rgb)
-        #     plt.title(f'Iteration: {i}')
-        #     plt.subplot(122)
-        #     plt.plot(iternums, psnrs)
-        #     plt.title('PSNR')
-        #     plt.show()
 
     print('Done')
 
@@ -190,14 +333,9 @@ def pose_spherical(theta, phi, radius):
     return c2w
 
 
-def nerfRender(theta, phi, radius):
-    c2w = pose_spherical(theta, phi, radius)
-    rays_o, rays_d = get_rays(H, W, focal, c2w[:3,:4])
+def nerfRender(matrix):
+    rays_o, rays_d = get_rays(H, W, focal, matrix[:3,:4])
     rgb, depth, acc = render_rays(model, rays_o, rays_d, near=2., far=6., N_samples=N_samples)
     img = np.clip(rgb,0,1)
     
     return img
-
-    # plt.figure(2, figsize=(20,6))
-    # plt.imshow(img)
-    # plt.show()

@@ -58,8 +58,6 @@ static PyObject *screenshot(PyObject *self, PyObject *args)
     Rendering::RenderingContext *c = dynamic_cast<E_Rendering::E_RenderingContext *>(a->at(0).get())->ref();
     Rendering::Texture *t = dynamic_cast<E_Rendering::E_Texture *>(a->at(1).get())->ref().get();
 
-    // pixels = RenderFlow::getTextureData(*c, *t);
-    // r = EScript::eval(*runtime, EScript::StringData("RenderFlow._screenshot(" + std::to_string(x) + ", " + std::to_string(y) + ");"));
     pixels = RenderFlow::getTextureData(*c, *t);
 
     npy_intp dims[1] = {(npy_intp)pixels.size()};
@@ -73,7 +71,6 @@ static PyMethodDef Methods[] = {
 static PyModuleDef Module = {PyModuleDef_HEAD_INIT, "escript", NULL, -1, Methods, NULL, NULL, NULL, NULL};
 static PyObject *PyInit_escript(void) { return PyModule_Create(&Module); }
 
-// TODO move to PythonModule
 void PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 {
     if (!runtime)
@@ -82,9 +79,6 @@ void PythonRender::init(EScript::Runtime &rt, std::string path /* = "" */)
 
         PyConfig config;
         PyConfig_InitPythonConfig(&config);
-
-        // config.module_search_paths_set = 1;
-        // PyWideStringList_Append(&config.module_search_paths, std::filesystem::current_path().c_str());
 
         PyImport_AppendInittab("escript", &PyInit_escript);
 
@@ -118,8 +112,6 @@ void PythonRender::finalizeModule()
 // TODO NPY_FLOAT64 only when float?
 std::vector<float> PythonRender::render(std::vector<int> &prerender)
 {
-    // time_t start = clock();
-
     npy_intp dims[1] = {(npy_intp)prerender.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_INT32, prerender.data());
     PyObject *args = Py_BuildValue("(O)", in_array);
@@ -136,9 +128,6 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
         return {};
     }
 
-    // std::cout << "time call: " << clock() - start << std::endl;
-    // start = clock();
-
     if (!PyArray_Check(result))
     {
         std::cerr << "wrong return type: use numpy array" << std::endl;
@@ -147,9 +136,6 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
     PyArrayObject *array = (PyArrayObject *)PyArray_FromArray((PyArrayObject *)result, PyArray_DescrFromType(NPY_FLOAT64), 0);
     PyArrayObject *flattenedArray = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
 
-    // std::cout << "time prepare numpy array: " << clock() - start << std::endl;
-    // start = clock();
-
     Py_ssize_t size = PyArray_SIZE(flattenedArray);
     std::vector<float> vector(size);
 
@@ -157,7 +143,6 @@ std::vector<float> PythonRender::render(std::vector<int> &prerender)
     {
         vector[i] = *(double *)PyArray_GETPTR1(flattenedArray, i);
     }
-    // std::cout << "time to c array: " << clock() - start << std::endl;
 
     Py_DecRef((PyObject *)flattenedArray);
     Py_DecRef((PyObject *)array);
@@ -190,10 +175,6 @@ void PythonRender::loadModel(std::string pythonPath, std::string modelPath, EScr
     PyObject *result = pyTensorflowModule->execute("loadModel", args);
     std::cout << "model loaded" << std::endl;
 
-    // Py_DECREF(pathObj);
-    // Py_DECREF(shapeObj);
-    // Py_DECREF(inObj);
-    // Py_DECREF(outObj);
     Py_DECREF(args);
 
     if (!result)
@@ -234,7 +215,6 @@ std::vector<float> PythonRender::predict(std::vector<float> &input, bool cache)
             return lastOutput;
     }
 
-    // time_t start = clock();
 
     npy_intp dims[1] = {(long long int)input.size()};
     PyObject *in_array = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT32, input.data());
@@ -250,14 +230,10 @@ std::vector<float> PythonRender::predict(std::vector<float> &input, bool cache)
         std::cout << "python predict call failed." << std::endl;
         return {};
     }
-    // std::cout << "time call: " << clock() - start << std::endl;
-    // start = clock();
 
     PyArrayObject *array = (PyArrayObject *)PyArray_FromArray((PyArrayObject *)result, PyArray_DescrFromType(NPY_FLOAT64), 0);
     PyArrayObject *flattenedArray = (PyArrayObject *)PyArray_Flatten(array, NPY_CORDER);
 
-    // std::cout << "time prepare numpy array: " << clock() - start << std::endl;
-    // start = clock();
 
     Py_ssize_t size = PyArray_SIZE(flattenedArray);
     std::vector<float> vector(size);
@@ -266,7 +242,6 @@ std::vector<float> PythonRender::predict(std::vector<float> &input, bool cache)
     {
         vector[i] = *(double *)PyArray_GETPTR1(flattenedArray, i);
     }
-    // std::cout << "time to c array: " << clock() - start << std::endl;
 
     Py_DecRef((PyObject *)flattenedArray);
     Py_DecRef((PyObject *)array);

@@ -11,7 +11,6 @@ skip.doEnableState @(override) := fn(node, rp) { return MinSG.STATE_SKIP_RENDERI
 Effect._constructor ::= fn() {
     var flow = RenderFlow.getFlow();
 
-    // TODO createHDRTexture??
     var bitmap = new Util.Bitmap(flow.getDimX(),flow.getDimY(), flow.getFormat() == 'MONO' ? Util.Bitmap.MONO : Util.Bitmap.RGB);
     this.colorTexture := Rendering.createTextureFromBitmap(bitmap);
 

@@ -1,10 +1,10 @@
 static plugin = new Plugin({
 		Plugin.NAME : 'RenderFlow', // ideally the same as the subdirectory this file is in
-		Plugin.DESCRIPTION : 'Use tensorflow models for rendering',
+		Plugin.DESCRIPTION : 'Use tensorflow models or Python for rendering',
 		Plugin.VERSION : 0.2,
 		Plugin.AUTHORS : "Leo Decking",
 		Plugin.OWNER : "Leo Decking",
-		Plugin.LICENSE : "Some License", // TODO
+		Plugin.LICENSE : "",
 		Plugin.REQUIRES : [ ], // will be explained later
 		Plugin.EXTENSION_POINTS : [ ] // will be explained later
 });
@@ -33,8 +33,8 @@ plugin.init @(override) := fn() {
 	load(__DIR__ + "/flows/PythonMyFlow.escript");
 	load(__DIR__ + "/flows/PythonPrerenderFlow.escript");
 	load(__DIR__ + "/flows/PythonUpscaleFlow.escript");
-	load(__DIR__ + "/flows/Nerf.escript");
-	load(__DIR__ + "/flows/instant-ngp.escript");
+	load(__DIR__ + "/flows/TinyNerf.escript");
+	load(__DIR__ + "/flows/InstantNGP.escript");
 
 	module.on('PADrend/gui', initGUI);
 
@@ -58,7 +58,7 @@ plugin.init @(override) := fn() {
 static initGUI = fn(gui) {
 	outln("RenderFlow: Init GUI...");
 		
-	// Adds the menu entry 'ExampleProject' to the plugins menu.
+	// Adds the menu entry 'RenderFlow' to the plugins menu.
 	gui.register('PADrend_PluginsMenu.RenderFlow',[
 		{
 			GUI.TYPE : GUI.TYPE_MENU,
@@ -78,8 +78,6 @@ static initGUI = fn(gui) {
 				GUI.LABEL : flow.getName(),
 				GUI.DATA_VALUE : loadedFlow == flow,
 				GUI.ON_DATA_CHANGED : [flow]=>fn(flow,value){
-					// systemConfig.setValue('PADrend.plugins.'+name,value);
-					// PADrend.message("Flow '"+name+"' ("+value+")");
 					gui.closeAllMenus();
 					if(loadedFlow == flow) deactivate();
 					else activate(flow);
@@ -101,11 +99,9 @@ static activate = fn(flow) {
 		deactivate();
 
 	
-	// if(flow.getModel() && loadedModel != flow.getModel() + flow.getModelInput() + flow.getModelOutput()) {
 	if(flow.getModel())
 		RenderFlow.loadModel(__DIR__ + "/PythonTensorflow.py", flow.getModel(), flow.getModelShape(), flow.getModelInput(), flow.getModelOutput());
-		// loadedModel = flow.getModel() + flow.getModelInput() + flow.getModelOutput();
-	// }
+	
 	loadedFlow = flow;
 	if(flow.getPythonPath()) RenderFlow.pythonInit(flow.getPythonPath());
 
@@ -120,7 +116,6 @@ static deactivate = fn() {
 		if(loadedFlow.getPythonPath()) RenderFlow.finalizeModule();
 		if(loadedFlow.getModel()) RenderFlow.unloadModel();
 
-		// loadedModel = void;
 		loadedFlow.onDeactivate();
 		loadedFlow = void;
 	}

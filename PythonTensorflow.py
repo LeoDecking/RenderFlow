@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 
 def unload():
-    # print("unload model, by Python")
     global model, shape, input_name, output_name
     model=None
     shape=None

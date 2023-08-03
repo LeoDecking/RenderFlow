@@ -16,6 +16,5 @@ public:
     static void loadModel(std::string pythonPath, std::string modelPath, EScript::Object *shape, std::string input_name, std::string output_name);
     static void unloadloadModel();
     static std::vector<float> predict(std::vector<float> &input, bool cache);
-    // static bool finalize();
     static std::vector<float> render(std::vector<int> &prerender);
 };

@@ -50,7 +50,6 @@ T._constructor ::= fn( Map properties){
 T.getName		            ::= fn(){	return this._properties[T.NAME];	};
 T.getPythonPath		            ::= fn(){	return this._properties[T.PYTHON_PATH];	};
 T.getModel		            ::= fn(){	return this._properties[T.MODEL];	};
-// T.getModelFrozenGraph		::= fn(){	return this._properties[T.MODEL_FROZEN_GRAPH];	};
 T.getModelShape		        ::= fn(){	return this._properties[T.MODEL_SHAPE];	};
 T.getModelInput		        ::= fn(){	return this._properties[T.MODEL_INPUT];	};
 T.getModelOutput		    ::= fn(){	return this._properties[T.MODEL_OUTPUT];	};

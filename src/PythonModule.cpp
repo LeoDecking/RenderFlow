@@ -27,33 +27,12 @@ PythonModule::PythonModule(std::string path, bool reuse /* = true */)
 
     std::cout << "name: " << name << std::endl;
 
-    std::cout << "thread: " << std::this_thread::get_id() << std::endl;
-
-    // PyRun_SimpleString("c")
-
-    PyRun_SimpleString(("c=0;print('" + name + "' in sys.modules);c=1;").c_str());
-    double c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
-    std::cout << "counter: " << c << std::endl;
-    PyRun_SimpleString(("if '" + name + "' in sys.modules: c=3;module = sys.modules['" + name + "'];c=4;print(module);c=5").c_str());
-    c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
-    std::cout << "counter: " << c << std::endl;
-    PyRun_SimpleString(("if '" + name + "' not in sys.modules:c=6; spec = importlib.util.spec_from_file_location('" + name + "', '" + path + "');c=7; module = importlib.util.module_from_spec(spec); c=8;sys.modules['" + name + "'] = module;c=9;spec.loader.exec_module(module);c=10;print(module)").c_str());
-
+    PyRun_SimpleString(("if '" + name + "' in sys.modules: module = sys.modules['" + name + "']").c_str());
+    PyRun_SimpleString(("if '" + name + "' not in sys.modules: spec = importlib.util.spec_from_file_location('" + name + "', '" + path + "'); module = importlib.util.module_from_spec(spec);sys.modules['" + name + "'] = module;spec.loader.exec_module(module)").c_str());
     PyRun_SimpleString("module.init()");
 
-    // if (pyModule)
-    //     Py_DECREF(pyModule);
-
-    c = PyLong_AsDouble(PyObject_GetAttrString(PythonRender::mainModule, "c"));
-    std::cout << "counter: " << c << std::endl;
     pyModule = PyObject_GetAttrString(PythonRender::mainModule, "module");
-    // execute("init", EScript::Array::create(), true);
-
-    // pyModule = PyDict_GetItemString(PythonRender::sysModules, name.c_str());
 }
-
-// TODO numpy
-// TODO eval python
 
 EScript::Object *PythonModule::pythonToEScript(PyObject *obj, bool hashable)
 {
@@ -75,7 +54,6 @@ EScript::Object *PythonModule::pythonToEScript(PyObject *obj, bool hashable)
     }
     else if (PyList_Check(obj))
     {
-        // Py_ssize_t size = PyList_Size(obj);
         EScript::Array *array = EScript::Array::create();
         array->reserve(PyList_Size(obj));
 
@@ -132,7 +110,6 @@ PyObject *PythonModule::escriptToPython(EScript::Object *obj, bool hashable /* =
     }
     else if (EScript::Array *a = dynamic_cast<EScript::Array *>(obj))
     {
-        // EScript::ERef<EScript::Iterator> itRef = dynamic_cast<EScript::Iterator *>(a->getIterator());
         PyObject *list = PyList_New(a->size());
         for (size_t i = 0; i < a->size(); i++)
             PyList_SET_ITEM(list, i, escriptToPython(a->at(i).get()));
