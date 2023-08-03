@@ -1,6 +1,10 @@
 # RenderFlow
 
-This plugin defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
+This is a plugin for [PADrend](https://www.padrend.de/): "Platform for Algorithm Development and Rendering – a software system for virtual walkthroughs in complex three-dimensional scenes."
+
+I developed this project as a student assistant in the research group Algorithms and Complexity at the Heinz Nixdorf Institute, Paderborn University.
+
+The plugin defines the new EScript type <code>RenderFlow.Flow</code>.<br/>
 A <code>Flow</code> defines how the render process should be modified.<br/>
 Therefore a new <code>render()</code> method can be defined in EScript or in Python with access to the pixels by the standard renderer.<br>
 In EScript, a tensorflow saved model can be used via an given interface.<br/>
